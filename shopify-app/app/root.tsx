@@ -22,10 +22,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        {/* Allow embedding inside Shopify Admin iframe */}
+        {/* CSP for Shopify embedded app — full directives also set via server middleware */}
         <meta
           httpEquiv="Content-Security-Policy"
-          content="frame-ancestors https://*.myshopify.com https://admin.shopify.com"
+          content="frame-ancestors https://*.myshopify.com https://admin.shopify.com; script-src 'self' 'unsafe-inline' https://cdn.shopify.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; connect-src 'self' https://*.shopify.com https://*.myshopify.com wss://*.shopify.com"
         />
         <Meta />
         <Links />

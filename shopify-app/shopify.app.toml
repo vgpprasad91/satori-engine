@@ -1,0 +1,50 @@
+# Shopify App configuration — required for `shopify app dev` and Partner Dashboard submission.
+# See: https://shopify.dev/docs/apps/tools/cli/configuration
+
+name = "Satori Engine"
+client_id = "REPLACE_WITH_YOUR_CLIENT_ID"
+application_url = "https://shopify-app-production.your-domain.workers.dev"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "REPLACE_WITH_DEV_STORE.myshopify.com"
+
+[auth]
+redirect_urls = [
+  "https://shopify-app-production.your-domain.workers.dev/auth/callback",
+  "https://shopify-app-staging.your-domain.workers.dev/auth/callback",
+  "https://shopify-app-dev.your-domain.workers.dev/auth/callback",
+]
+
+[access_scopes]
+scopes = "read_products,write_products,read_themes,write_themes,read_content,write_content"
+
+[webhooks]
+api_version = "2025-04"
+
+  [[webhooks.subscriptions]]
+  topics = [
+    "products/create",
+    "products/update",
+    "products/delete",
+    "app/uninstalled",
+  ]
+  uri = "/webhooks"
+
+  [[webhooks.subscriptions]]
+  topics = [
+    "customers/data_request",
+    "customers/redact",
+    "shop/redact",
+  ]
+  uri = "/webhooks"
+  compliance_topics = true
+
+[app_proxy]
+url = "https://shopify-app-production.your-domain.workers.dev/api/proxy"
+subpath = "satori"
+prefix = "apps"
+
+[pos]
+embedded = false

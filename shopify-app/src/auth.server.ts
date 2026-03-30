@@ -15,10 +15,12 @@
  */
 
 import { log } from "./logger.js";
+import { SHOPIFY_API_VERSION } from "./config.js";
 import {
   upsertSession,
   getSession,
   isSessionExpired,
+  computeExpiresAt,
   type MerchantSession,
 } from "./session.server.js";
 
@@ -256,13 +258,13 @@ export async function shopifyAuth(
     variables?: Record<string, unknown>
   ): Promise<Response> => {
     return fetch(
-      `https://${shop}/admin/api/2025-01/graphql.json`,
+      `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Shopify-Access-Token": session.access_token,
-          "X-Shopify-API-Version": "2025-01",
+          "X-Shopify-API-Version": SHOPIFY_API_VERSION,
         },
         body: JSON.stringify({ query, variables }),
       }
@@ -315,10 +317,10 @@ export async function handleOAuthCallback(
     env.SHOPIFY_APP_URL
   );
 
-  // Calculate expiry if present
-  const expiresAt = tokenData.expires_in
-    ? Date.now() + tokenData.expires_in * 1000
-    : null;
+  // Calculate expiry: use Shopify-provided value or default TTL.
+  // grant_options[]=per-user means online token (24h default); otherwise offline (30d).
+  const isOnlineToken = true; // buildInstallUrl uses "per-user" grant
+  const expiresAt = computeExpiresAt(tokenData.expires_in, isOnlineToken);
 
   // 4. Store session in D1
   await upsertSession(env.DB, shop, tokenData.access_token, tokenData.scope, expiresAt);

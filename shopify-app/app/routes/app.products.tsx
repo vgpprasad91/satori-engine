@@ -139,6 +139,37 @@ export async function action({ request, context }: ActionFunctionArgs) {
   if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.formData();
+  const intent = body.get("intent") as string | null;
+
+  // Retry a single failed job — resets status to pending and re-queues
+  if (intent === "retry") {
+    const imageId = body.get("imageId") as string;
+    if (!imageId) return json({ error: "Missing imageId" }, { status: 400 });
+
+    await env.DB.prepare(
+      `UPDATE generated_images SET status = 'pending', error_message = NULL, generated_at = datetime('now')
+       WHERE id = ?1 AND shop = ?2 AND status IN ('failed', 'bg_removal_failed', 'renderer_timeout', 'render_error', 'compositing_failed', 'timed_out', 'unknown_error')`
+    ).bind(imageId, auth.shop).run();
+
+    // Re-queue the render task
+    const row = await env.DB.prepare(
+      `SELECT product_id, template_id FROM generated_images WHERE id = ?1 AND shop = ?2`
+    ).bind(imageId, auth.shop).first<{ product_id: string; template_id: string }>();
+
+    if (row) {
+      await (env as unknown as { IMAGE_QUEUE: Queue }).IMAGE_QUEUE.send({
+        shop: auth.shop,
+        productId: row.product_id,
+        templateId: row.template_id,
+        imageId,
+      });
+    }
+
+    await invalidateProductsCache(auth.shop, env);
+    return json({ retried: true });
+  }
+
+  // Default: bulk regenerate
   const productIds = body.getAll("productId").map(String);
 
   if (productIds.length === 0) {
@@ -163,6 +194,21 @@ type BadgeTone =
   | "info"
   | undefined;
 
+/** Statuses that represent a failed/retryable job */
+const RETRYABLE_STATUSES = new Set([
+  "failed",
+  "bg_removal_failed",
+  "renderer_timeout",
+  "render_error",
+  "compositing_failed",
+  "timed_out",
+  "unknown_error",
+]);
+
+function isRetryable(status: string | null): boolean {
+  return status !== null && RETRYABLE_STATUSES.has(status);
+}
+
 function statusBadge(status: string | null): { tone: BadgeTone; label: string } {
   switch (status) {
     case "success":
@@ -170,6 +216,7 @@ function statusBadge(status: string | null): { tone: BadgeTone; label: string } 
     case "failed":
     case "bg_removal_failed":
     case "compositing_failed":
+    case "render_error":
     case "unknown_error":
       return { tone: "critical", label: status === "failed" ? "Failed" : status.replace(/_/g, " ") };
     case "pending":
@@ -251,6 +298,16 @@ export default function ProductsRoute() {
     form.append("productId", productId);
     fetcher.submit(form, { method: "post" });
     setToastMessage("Regeneration queued");
+    setToastActive(true);
+  }
+
+  // Retry a failed job
+  function retryJob(imageId: string) {
+    const form = new FormData();
+    form.append("intent", "retry");
+    form.append("imageId", imageId);
+    fetcher.submit(form, { method: "post" });
+    setToastMessage("Retrying image generation...");
     setToastActive(true);
   }
 
@@ -460,6 +517,24 @@ export default function ProductsRoute() {
                                 </InlineStack>
 
                                 <InlineStack gap="200" blockAlign="center">
+                                  {isRetryable(product.generated_image_status) && (
+                                    <Button
+                                      size="slim"
+                                      tone="critical"
+                                      onClick={() => {
+                                        retryJob(product.generated_image_id ?? product.id);
+                                      }}
+                                      loading={
+                                        fetcher.state === "submitting" &&
+                                        fetcher.formData?.get("intent") === "retry" &&
+                                        fetcher.formData?.get("imageId") === (product.generated_image_id ?? product.id)
+                                      }
+                                      aria-label={`Retry failed image generation for ${product.title}`}
+                                      accessibilityLabel={`Retry failed image generation for ${product.title}`}
+                                    >
+                                      Retry
+                                    </Button>
+                                  )}
                                   <Button
                                     size="slim"
                                     onClick={() => {

@@ -5,6 +5,30 @@
  * The access_token column is sensitive — never logged (enforced by logger.ts types).
  */
 
+// ---------------------------------------------------------------------------
+// Session TTL defaults
+// ---------------------------------------------------------------------------
+
+/** Online (per-user) tokens: 24 hours */
+export const ONLINE_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Offline (app) tokens: 30 days */
+export const OFFLINE_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Compute expires_at timestamp. If Shopify provides `expires_in` (seconds),
+ * use that. Otherwise fall back to the default TTL based on token type.
+ */
+export function computeExpiresAt(
+  expiresInSeconds: number | undefined,
+  isOnlineToken: boolean
+): number {
+  if (expiresInSeconds) {
+    return Date.now() + expiresInSeconds * 1000;
+  }
+  return Date.now() + (isOnlineToken ? ONLINE_TOKEN_TTL_MS : OFFLINE_TOKEN_TTL_MS);
+}
+
 export interface MerchantSession {
   shop: string;
   /** Shopify OAuth access token — NEVER log this field */

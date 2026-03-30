@@ -1,0 +1,11 @@
+api_version = "2025-04"
+
+[[extensions]]
+type = "theme"
+name = "Satori Generated Images"
+handle = "satori-generated-images"
+
+  [[extensions.blocks]]
+  type = "satori-images"
+  name = "Generated Images"
+  file = "blocks/satori-images.liquid"

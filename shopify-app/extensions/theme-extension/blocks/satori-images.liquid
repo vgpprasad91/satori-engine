@@ -1,0 +1,155 @@
+{% comment %}
+  Satori Generated Images — Theme App Extension Block
+
+  Displays AI-generated product images from the Satori Engine app.
+  Merchants can add this block to any product page via the theme editor.
+
+  The block fetches generated images through the app proxy route.
+{% endcomment %}
+
+{% if product %}
+  <div class="satori-generated-images" data-product-id="{{ product.id }}">
+    <style>
+      .satori-generated-images {
+        margin: {{ block.settings.margin_top }}px 0 {{ block.settings.margin_bottom }}px;
+      }
+      .satori-generated-images__title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+      }
+      .satori-generated-images__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+      }
+      .satori-generated-images__item {
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e5e5e5;
+        transition: box-shadow 0.2s ease;
+      }
+      .satori-generated-images__item:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      .satori-generated-images__item img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .satori-generated-images__empty {
+        color: #6d7175;
+        font-size: 0.875rem;
+        padding: 16px 0;
+      }
+      .satori-generated-images__loading {
+        text-align: center;
+        padding: 24px 0;
+        color: #6d7175;
+      }
+    </style>
+
+    {% if block.settings.show_title %}
+      <h3 class="satori-generated-images__title">
+        {{ block.settings.title }}
+      </h3>
+    {% endif %}
+
+    <div class="satori-generated-images__loading" id="satori-loading-{{ product.id }}">
+      Loading generated images...
+    </div>
+
+    <div class="satori-generated-images__grid" id="satori-grid-{{ product.id }}" style="display: none;">
+    </div>
+
+    <div class="satori-generated-images__empty" id="satori-empty-{{ product.id }}" style="display: none;">
+      No generated images available for this product.
+    </div>
+
+    <script>
+      (function() {
+        var productId = '{{ product.id }}';
+        var gridEl = document.getElementById('satori-grid-' + productId);
+        var loadingEl = document.getElementById('satori-loading-' + productId);
+        var emptyEl = document.getElementById('satori-empty-' + productId);
+        var maxImages = {{ block.settings.max_images }};
+
+        fetch('/apps/satori/api/proxy/images/' + productId)
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            loadingEl.style.display = 'none';
+            var images = (data.images || []).slice(0, maxImages);
+
+            if (images.length === 0) {
+              emptyEl.style.display = 'block';
+              return;
+            }
+
+            gridEl.style.display = 'grid';
+            images.forEach(function(img) {
+              var item = document.createElement('div');
+              item.className = 'satori-generated-images__item';
+              var imgEl = document.createElement('img');
+              imgEl.src = img.url;
+              imgEl.alt = img.alt || 'Generated product image';
+              imgEl.loading = 'lazy';
+              item.appendChild(imgEl);
+              gridEl.appendChild(item);
+            });
+          })
+          .catch(function() {
+            loadingEl.style.display = 'none';
+            emptyEl.style.display = 'block';
+          });
+      })();
+    </script>
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Generated Images",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section title",
+      "default": "Generated Images"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_title",
+      "label": "Show section title",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "max_images",
+      "label": "Maximum images to display",
+      "min": 1,
+      "max": 12,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "margin_top",
+      "label": "Top margin (px)",
+      "min": 0,
+      "max": 60,
+      "step": 4,
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "margin_bottom",
+      "label": "Bottom margin (px)",
+      "min": 0,
+      "max": 60,
+      "step": 4,
+      "default": 20
+    }
+  ]
+}
+{% endschema %}

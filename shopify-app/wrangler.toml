@@ -1,5 +1,6 @@
 # Shopify App — Cloudflare Worker
-# Shopify API version pinned to 2025-01 — upgrade-by date: 2025-10-01
+# Shopify API version pinned to 2025-04 — upgrade-by date: 2026-01-01
+# Version constant lives in src/config.ts — see docs/api-version-upgrade.md
 
 name = "shopify-app"
 main = "build/worker/index.js"
@@ -31,7 +32,9 @@ crons = [
 #
 # R2 path pattern: logs/{YYYY}/{MM}/{DD}/
 # Retention: R2 lifecycle rule — delete objects older than 90 days
-#   (set via: wrangler r2 bucket lifecycle set shopify-app-production-logs --expire-days 90)
+#   R2 lifecycle rules cannot be configured via wrangler.toml.
+#   Run: bash scripts/configure-r2-lifecycle.sh [environment]
+#   Or set manually via Cloudflare Dashboard → R2 → bucket → Settings → Lifecycle Rules.
 #
 # Logpush captures all console.log() JSON lines emitted by logger.ts.
 # Sensitive fields (access_token, SHOPIFY_API_SECRET) are stripped by logger.ts
