@@ -34,6 +34,35 @@ const RETRY_BASE_DELAY_SECONDS = 5;
 /** Maximum retry delay cap (Cloudflare hard limit: 43200 s = 12 h). */
 const RETRY_MAX_DELAY_SECONDS = 43_200;
 
+/**
+ * Application-level auto-retry limit for transient failures (Blocker 7).
+ * Distinct from Cloudflare Queue's max_retries (4) — this cap prevents
+ * permanent failures (e.g. corrupt image URL) from exhausting the queue budget.
+ */
+export const MAX_APP_RETRIES = 3;
+
+/**
+ * Error message substrings that indicate a TRANSIENT failure worth retrying.
+ * Permanent failures (auth errors, schema errors) are NOT in this list and
+ * will exhaust retries quickly so the DLQ captures them.
+ */
+const TRANSIENT_ERROR_PATTERNS = [
+  "network",
+  "fetch failed",
+  "timeout",
+  "503",
+  "502",
+  "rate limit",
+  "econnreset",
+  "socket hang up",
+  "ETIMEDOUT",
+] as const;
+
+export function isTransientError(err: unknown): boolean {
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  return TRANSIENT_ERROR_PATTERNS.some((p) => msg.includes(p.toLowerCase()));
+}
+
 // ---------------------------------------------------------------------------
 // Brand kit type
 // ---------------------------------------------------------------------------
@@ -370,20 +399,56 @@ export async function handleQueueBatch(
         );
         message.ack();
       } else {
-        // Retriable error — apply exponential back-off
-        const delaySeconds = computeRetryDelay(attempt);
+        // Determine if this is a transient or permanent failure (Blocker 7)
+        const transient = isTransientError(err);
+        const errorMsg = err instanceof Error ? err.message : String(err);
 
-        log({
-          shop: job.shop,
-          productId: job.productId,
-          step: "queue.consumer.retry",
-          status: "error",
-          attempt,
-          delaySeconds,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        if (!transient || attempt >= MAX_APP_RETRIES) {
+          // Permanent failure or exhausted app-level retries — write to D1
+          const finalStatus = transient ? "failed" : "failed";
+          await writeJobStatus(
+            job,
+            finalStatus,
+            transient
+              ? `Exceeded ${MAX_APP_RETRIES} auto-retries: ${errorMsg}`
+              : `Permanent failure (non-transient): ${errorMsg}`,
+            env.DB
+          ).catch(() => {});
 
-        message.retry({ delaySeconds });
+          log({
+            shop: job.shop,
+            productId: job.productId,
+            step: "queue.consumer.permanent_failure",
+            status: "error",
+            attempt,
+            transient,
+            error: errorMsg,
+          });
+
+          // Let Cloudflare Queue handle its own max_retries for permanent failures
+          // by NOT calling message.ack() — the queue will retry up to max_retries
+          // then send to DLQ. For non-transient, ack to avoid wasting retries.
+          if (!transient) {
+            message.ack();
+          } else {
+            message.retry({ delaySeconds: computeRetryDelay(attempt) });
+          }
+        } else {
+          // Transient error within app retry budget — apply exponential back-off
+          const delaySeconds = computeRetryDelay(attempt);
+
+          log({
+            shop: job.shop,
+            productId: job.productId,
+            step: "queue.consumer.retry",
+            status: "error",
+            attempt,
+            delaySeconds,
+            error: errorMsg,
+          });
+
+          message.retry({ delaySeconds });
+        }
       }
     }
   }

@@ -1,0 +1,99 @@
+{% comment %}
+  Generated Image Block — Theme App Extension (Blocker 6)
+
+  Renders the Satori-generated product image for the current product via the
+  app proxy endpoint (/apps/satori/image/:productId).
+
+  The app proxy is configured in shopify.app.toml:
+    [app_proxy]
+    url = "https://your-worker.workers.dev/proxy"
+    subpath = "satori"
+    prefix = "apps"
+
+  The Worker's /proxy route reads the `product_id` query param, looks up the
+  generated image R2 key in D1, and streams the image from R2.
+
+  Settings:
+    heading         — optional heading above the image
+    image_max_width — max CSS width (default: 600px)
+    show_alt_text   — display alt text caption below image
+{% endcomment %}
+
+{%- liquid
+  assign max_width = block.settings.image_max_width | default: 600
+  assign product_id = product.id
+  assign proxy_url = '/apps/satori/image/' | append: product_id
+  assign heading = block.settings.heading
+  assign show_alt = block.settings.show_alt_text
+-%}
+
+<div
+  class="satori-generated-image"
+  style="max-width: {{ max_width }}px; margin: 0 auto;"
+  {{ block.shopify_attributes }}
+>
+  {%- if heading != blank -%}
+    <h3 class="satori-generated-image__heading" style="margin-bottom: 0.5rem;">
+      {{ heading | escape }}
+    </h3>
+  {%- endif -%}
+
+  <div
+    class="satori-generated-image__container"
+    data-satori-product-id="{{ product_id }}"
+    data-satori-proxy-url="{{ proxy_url | escape }}"
+  >
+    {%- comment -%}
+      The image is loaded asynchronously via the app proxy to keep theme
+      render times fast. The <noscript> fallback shows nothing gracefully.
+    {%- endcomment -%}
+    <img
+      id="satori-img-{{ product_id }}"
+      class="satori-generated-image__img"
+      src="{{ proxy_url }}"
+      alt="{{ product.featured_image.alt | default: product.title | escape }} — generated image"
+      style="width: 100%; height: auto; display: block;"
+      loading="lazy"
+      onerror="this.style.display='none'"
+    />
+
+    {%- if show_alt and product.featured_image.alt != blank -%}
+      <p class="satori-generated-image__caption" style="font-size: 0.875rem; color: currentColor; opacity: 0.7; margin-top: 0.25rem;">
+        {{ product.featured_image.alt | escape }}
+      </p>
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Generated Image",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "info": "Optional heading displayed above the generated image."
+    },
+    {
+      "type": "number",
+      "id": "image_max_width",
+      "label": "Max width (px)",
+      "default": 600,
+      "info": "Maximum width of the generated image. Set to 0 for full width."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_alt_text",
+      "label": "Show alt text below image",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "Generated Image Block"
+    }
+  ]
+}
+{% endschema %}

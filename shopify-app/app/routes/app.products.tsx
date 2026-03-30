@@ -460,6 +460,30 @@ export default function ProductsRoute() {
                                 </InlineStack>
 
                                 <InlineStack gap="200" blockAlign="center">
+                                  {/* Prominent Retry button for recoverable failure states (Blocker 7) */}
+                                  {[
+                                    "failed",
+                                    "bg_removal_failed",
+                                    "compositing_failed",
+                                    "renderer_timeout",
+                                    "timed_out",
+                                    "unknown_error",
+                                  ].includes(product.generated_image_status ?? "") && (
+                                    <Button
+                                      size="slim"
+                                      variant="primary"
+                                      tone="critical"
+                                      onClick={() => regenerate(product.id)}
+                                      loading={
+                                        fetcher.state === "submitting" &&
+                                        fetcher.formData?.get("productId") === product.id
+                                      }
+                                      aria-label={`Retry failed job for ${product.title}`}
+                                      accessibilityLabel={`Retry failed image generation for ${product.title}`}
+                                    >
+                                      Retry
+                                    </Button>
+                                  )}
                                   <Button
                                     size="slim"
                                     onClick={() => {

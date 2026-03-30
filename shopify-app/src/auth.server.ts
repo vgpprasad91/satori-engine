@@ -7,13 +7,20 @@
  *  - Access-token exchange
  *  - Token refresh (re-install flow for expired offline tokens)
  *  - shopifyAuth() middleware factory for Remix loaders/actions
+ *  - requireShopifyAuth() — throws a redirect on missing/expired session
  *
  * Security notes:
  *  - access_token NEVER appears in log payloads (logger.ts types enforce this)
  *  - All HMAC comparisons use timing-safe crypto.subtle
  *  - State nonces stored in KV with 10-minute TTL to prevent replay attacks
+ *
+ * API version:
+ *  - Pinned to SHOPIFY_API_VERSION (see constant below)
+ *  - Must be upgraded by SHOPIFY_API_VERSION_UPGRADE_BY
+ *  - warnApiVersionUpgrade() logs a warning when within 60 days of deadline
  */
 
+import { redirect } from "@remix-run/cloudflare";
 import { log } from "./logger.js";
 import {
   upsertSession,
@@ -21,6 +28,40 @@ import {
   isSessionExpired,
   type MerchantSession,
 } from "./session.server.js";
+
+// ---------------------------------------------------------------------------
+// API version constants (Blocker 8)
+// ---------------------------------------------------------------------------
+
+/**
+ * Shopify Admin API version used by this app.
+ * Upgrade-by date: 2025-10-01. Run warnApiVersionUpgrade() on startup.
+ * To upgrade: update this constant and test all GraphQL queries.
+ */
+export const SHOPIFY_API_VERSION = "2025-01";
+
+/**
+ * Date by which this API version must be upgraded.
+ * Shopify removes unsupported versions 12 months after release.
+ */
+export const SHOPIFY_API_VERSION_UPGRADE_BY = "2025-10-01";
+
+/**
+ * Logs a warning if within 60 days of the API version upgrade deadline.
+ * Call this from the Worker fetch handler or a cron trigger.
+ */
+export function warnApiVersionUpgrade(): void {
+  const upgradeDate = new Date(SHOPIFY_API_VERSION_UPGRADE_BY).getTime();
+  const daysUntil = Math.floor((upgradeDate - Date.now()) / (1000 * 60 * 60 * 24));
+  if (daysUntil <= 60 && daysUntil >= 0) {
+    log({
+      shop: "system",
+      step: "api_version_upgrade_warning",
+      status: "warn",
+      error: `Shopify API ${SHOPIFY_API_VERSION} must be upgraded by ${SHOPIFY_API_VERSION_UPGRADE_BY} — ${daysUntil} day(s) remaining`,
+    });
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -256,13 +297,13 @@ export async function shopifyAuth(
     variables?: Record<string, unknown>
   ): Promise<Response> => {
     return fetch(
-      `https://${shop}/admin/api/2025-01/graphql.json`,
+      `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Shopify-Access-Token": session.access_token,
-          "X-Shopify-API-Version": "2025-01",
+          "X-Shopify-API-Version": SHOPIFY_API_VERSION,
         },
         body: JSON.stringify({ query, variables }),
       }
@@ -270,6 +311,32 @@ export async function shopifyAuth(
   };
 
   return { shop, session, admin: { graphql: adminGraphql } };
+}
+
+// ---------------------------------------------------------------------------
+// requireShopifyAuth — throws a redirect instead of returning null (Blocker 1)
+// ---------------------------------------------------------------------------
+
+/**
+ * Like shopifyAuth() but throws a Remix redirect response when the session is
+ * missing or expired, rather than returning null.
+ *
+ * Usage in child route loaders/actions:
+ *   const auth = await requireShopifyAuth(request, env);
+ *   // auth is always AuthContext here — expired sessions redirect to /auth
+ */
+export async function requireShopifyAuth(
+  request: Request,
+  env: ShopifyEnv
+): Promise<AuthContext> {
+  const auth = await shopifyAuth(request, env);
+  if (!auth) {
+    const url = new URL(request.url);
+    const shop = url.searchParams.get("shop") ?? "";
+    const destination = shop ? `/auth?shop=${shop}` : "/auth";
+    throw redirect(destination);
+  }
+  return auth;
 }
 
 // ---------------------------------------------------------------------------

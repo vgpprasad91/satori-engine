@@ -8,6 +8,7 @@ import {
   useRouteError,
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/cloudflare";
+import { json } from "@remix-run/cloudflare";
 
 export const links: LinksFunction = () => [
   {
@@ -15,6 +16,35 @@ export const links: LinksFunction = () => [
     href: "https://unpkg.com/@shopify/polaris@latest/build/esm/styles.css",
   },
 ];
+
+/**
+ * Root loader — sets Content-Security-Policy as an HTTP response header
+ * (Blocker 10).
+ *
+ * Browsers IGNORE `frame-ancestors` in <meta http-equiv> tags; it MUST be
+ * set in the HTTP response header to allow Shopify Admin to embed this app.
+ *
+ * Ref: https://shopify.dev/docs/apps/build/authentication-authorization/iframe-protection
+ */
+export async function loader() {
+  return json(null, {
+    headers: {
+      "Content-Security-Policy":
+        "frame-ancestors https://*.myshopify.com https://admin.shopify.com;",
+    },
+  });
+}
+
+/**
+ * Export headers so all child routes inherit the CSP header.
+ * Remix merges headers from parent routes into child responses.
+ */
+export function headers() {
+  return {
+    "Content-Security-Policy":
+      "frame-ancestors https://*.myshopify.com https://admin.shopify.com;",
+  };
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (

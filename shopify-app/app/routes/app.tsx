@@ -16,6 +16,7 @@ import { UsageBanner } from "../components/UsageBanner.js";
 import { extractAppBridgeParams } from "../../src/app-shell.server.js";
 import { shopifyAuth } from "../../src/auth.server.js";
 import type { ShopifyEnv } from "../../src/auth.server.js";
+import { checkRateLimit, rateLimitResponse } from "../../src/rate-limit.server.js";
 import { getUsageBannerData } from "../../src/usage-banner.server.js";
 import type { UsageBannerData } from "../../src/usage-banner.server.js";
 
@@ -46,7 +47,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     }
   ).cloudflare.env;
 
-  // Enforce OAuth — redirect to /auth if session missing
+  // Enforce OAuth — redirect to /auth if session missing or expired
   const auth = await shopifyAuth(request, env);
   const url = new URL(request.url);
   const shop = url.searchParams.get("shop") ?? auth?.shop;
@@ -54,6 +55,12 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   if (!auth) {
     const redirectUrl = shop ? `/auth?shop=${shop}` : "/auth";
     return redirect(redirectUrl);
+  }
+
+  // Per-merchant rate limiting: 60 requests/minute (Blocker 2)
+  const rl = await checkRateLimit(auth.shop, env.KV_STORE);
+  if (!rl.allowed) {
+    return rateLimitResponse(rl.retryAfterSeconds);
   }
 
   // Load usage banner data (non-fatal — falls back to null banner on error)
