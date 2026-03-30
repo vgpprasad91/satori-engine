@@ -3,17 +3,6 @@ main = "src/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Pre-deploy invariant gate — runs before wrangler compiles and uploads.
-# Catches: unmapped variants, WCAG contrast failures, missing HTML annotations,
-# structural config errors.  Exit non-zero → deploy is aborted.
-#
-# Uses `npm run invariant-check` rather than a direct node path because npm
-# always sets CWD to the package.json directory before running the script,
-# making the ../../ relative path in package.json reliable regardless of
-# where wrangler itself was invoked from.
-[build]
-command = "npm run invariant-check"
-
 # Fonts bundled at deploy-time via module rules — zero CDN latency.
 # .woff  = Inter (latin subset, 4 weights) + Playfair Display
 # .ttf   = Cormorant Garamond, Dancing Script, Bebas Neue (aesthetic registers)

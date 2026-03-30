@@ -12,7 +12,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const LEGAL_DIR = join(__dirname, "../../legal-pages");
+const LEGAL_DIR = join(__dirname, "../legal-pages");
 
 let privacyHtml: string;
 let tosHtml: string;

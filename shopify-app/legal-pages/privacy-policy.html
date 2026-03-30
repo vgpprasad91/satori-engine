@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — MailCraft</title>
+</head>
+<body>
+  <nav>
+    <a href="index.html">Legal Home</a> |
+    <a href="terms-of-service.html">Terms of Service</a>
+  </nav>
+
+  <h1>Privacy Policy</h1>
+  <p>Last updated: 2025-01-01</p>
+  <p>Contact: <a href="mailto:privacy@mailcraft-editor.pages.dev">privacy@mailcraft-editor.pages.dev</a></p>
+
+  <h2>1. Data We Collect</h2>
+  <p>When you install MailCraft, we collect and process the following data on your behalf:</p>
+  <ul>
+    <li><strong>Product images</strong> — retrieved via the Shopify Admin API to generate social-media creatives.</li>
+    <li><strong>Product titles</strong> and descriptions — used as text overlays in generated images.</li>
+    <li><strong>Access tokens</strong> — OAuth access tokens issued by Shopify to authenticate API calls on your behalf.</li>
+    <li>Shop domain, plan name, and locale settings.</li>
+  </ul>
+
+  <h2>2. Data Retention</h2>
+  <ul>
+    <li><strong>Access tokens</strong>: deleted on uninstall via the <code>shop/redact</code> and <code>app/uninstalled</code> webhooks.</li>
+    <li><strong>Generated images</strong>: retained for 90 days after creation, then automatically deleted from R2 storage.</li>
+    <li><strong>Logs and trace events</strong>: retained for 90 days via Cloudflare Logpush R2 lifecycle rules.</li>
+    <li>D1 database records (merchant rows, product metadata): deleted within 48 hours of receiving a <code>shop/redact</code> webhook.</li>
+  </ul>
+
+  <h2>3. Third-Party Processors</h2>
+  <p>We share data with the following sub-processors to deliver the service:</p>
+  <ul>
+    <li><strong>Cloudflare</strong> — Workers compute, D1 database, R2 storage, KV, and Logpush.</li>
+    <li><strong>Remove.bg</strong> — background removal for product images (product image URLs are sent; no PII is shared).</li>
+    <li><strong>Resend</strong> — transactional email delivery for billing receipts and alerts.</li>
+    <li><strong>Sentry</strong> — error monitoring and performance tracing (no customer PII is included in error payloads).</li>
+  </ul>
+
+  <h2>4. GDPR Mandatory Webhooks</h2>
+  <p>As required by Shopify's Partner Agreement, we implement all three GDPR webhooks:</p>
+  <ul>
+    <li><code>customers/data_request</code> — returns all data held for a customer within 30 days.</li>
+    <li><code>customers/redact</code> — deletes all personal data associated with a customer.</li>
+    <li><code>shop/redact</code> — deletes all shop data 48 hours after an uninstall is confirmed.</li>
+  </ul>
+
+  <h2>5. Your Rights</h2>
+  <p>You may request access, correction, or deletion of your data at any time by emailing
+  <a href="mailto:privacy@mailcraft-editor.pages.dev">privacy@mailcraft-editor.pages.dev</a>.</p>
+</body>
+</html>
