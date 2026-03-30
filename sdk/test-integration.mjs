@@ -1,6 +1,9 @@
 /**
  * Integration smoke test — hits the live API with the built CJS SDK.
- * Run: node sdk/test-integration.mjs
+ * Run: SATORI_API_KEY=<your-key> node sdk/test-integration.mjs
+ *
+ * Required environment variables:
+ *   SATORI_API_KEY  — your Satori API key (see .env.example)
  */
 
 import { createRequire } from 'module'
@@ -9,7 +12,12 @@ import { writeFileSync } from 'fs'
 const require = createRequire(import.meta.url)
 const { SatoriClient, SatoriError } = require('./dist/cjs/index.js')
 
-const API_KEY = '4a64ef407f7245d4411f53d4e96509c3d9501a62203af493cb05267581fe767f'
+const API_KEY = process.env.SATORI_API_KEY
+if (!API_KEY) {
+  console.error('\nError: SATORI_API_KEY environment variable is required.')
+  console.error('Copy sdk/.env.example to sdk/.env and fill in your key.\n')
+  process.exit(1)
+}
 
 const client = new SatoriClient({ apiKey: API_KEY, retries: 1 })
 

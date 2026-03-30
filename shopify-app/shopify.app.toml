@@ -1,0 +1,102 @@
+# shopify.app.toml — Shopify App configuration (Blocker 9)
+#
+# Fill in the values marked REPLACE_WITH_* from your Partner Dashboard.
+# Run `shopify app deploy` to push this config to Shopify.
+#
+# Docs: https://shopify.dev/docs/apps/tools/cli/configuration
+
+# ---------------------------------------------------------------------------
+# App identity
+# ---------------------------------------------------------------------------
+
+client_id = "REPLACE_WITH_CLIENT_ID_FROM_PARTNER_DASHBOARD"
+
+name = "Satori — AI Product Image Generator"
+
+# The root URL of the deployed Cloudflare Worker.
+# Update this after running `wrangler deploy --env production`.
+application_url = "https://REPLACE_WITH_YOUR_WORKER_URL.workers.dev"
+
+# Set to true for embedded (Admin) apps. Required for Polaris + App Bridge.
+embedded = true
+
+# ---------------------------------------------------------------------------
+# Development
+# ---------------------------------------------------------------------------
+
+[build]
+  # Remix build output directory
+  dev_store_url = "REPLACE_WITH_DEV_STORE.myshopify.com"
+  include_config_on_deploy = true
+
+# ---------------------------------------------------------------------------
+# OAuth scopes
+# Must match SHOPIFY_SCOPES env var and what auth.server.ts requests.
+# ---------------------------------------------------------------------------
+
+[access_scopes]
+  # read_products  — fetch product titles, images, metafields
+  # write_products — update product metafields with generated image URLs
+  # read_orders    — read order data for analytics
+  scopes = "read_products,write_products,read_orders"
+
+# ---------------------------------------------------------------------------
+# Webhooks
+# Matches webhook registrations in src/webhook-registration.server.ts
+# ---------------------------------------------------------------------------
+
+[webhooks]
+  api_version = "2025-01"
+
+  # App uninstall — clean up sessions and billing subscriptions
+  [[webhooks.subscriptions]]
+    topics = ["app/uninstalled"]
+    uri = "/webhooks/app-uninstalled"
+
+  # Product create/update — queue image generation for new/changed products
+  [[webhooks.subscriptions]]
+    topics = ["products/create", "products/update"]
+    uri = "/webhooks/products"
+
+  # Bulk operation — handle bulk product imports
+  [[webhooks.subscriptions]]
+    topics = ["bulk_operations/finish"]
+    uri = "/webhooks/bulk-operations"
+
+  # GDPR mandatory webhooks
+  [[webhooks.subscriptions]]
+    topics = ["customers/data_request"]
+    uri = "/webhooks/gdpr/customers-data-request"
+
+  [[webhooks.subscriptions]]
+    topics = ["customers/redact"]
+    uri = "/webhooks/gdpr/customers-redact"
+
+  [[webhooks.subscriptions]]
+    topics = ["shop/redact"]
+    uri = "/webhooks/gdpr/shop-redact"
+
+# ---------------------------------------------------------------------------
+# App proxy (Blocker 6 — serves generated images to storefronts)
+# Requests to https://store.myshopify.com/apps/satori/* are forwarded to:
+#   application_url/proxy/*
+# ---------------------------------------------------------------------------
+
+[app_proxy]
+  url = "https://REPLACE_WITH_YOUR_WORKER_URL.workers.dev/proxy"
+  subpath = "satori"
+  prefix = "apps"
+
+# ---------------------------------------------------------------------------
+# Billing (mirrors src/billing.server.ts plan definitions)
+# Note: Shopify App Store billing is managed via GraphQL mutations at runtime.
+# These stanzas are declarative documentation only — actual subscription
+# creation is handled in src/billing.server.ts via AppSubscriptionCreate.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Embedded app — Shopify App Bridge
+# ---------------------------------------------------------------------------
+
+[pos]
+  embedded = false

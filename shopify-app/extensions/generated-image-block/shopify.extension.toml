@@ -1,0 +1,37 @@
+# Shopify Theme App Extension — Generated Image Block (Blocker 6)
+#
+# Allows merchants to place generated product images anywhere in their
+# storefront theme via the Online Store Editor (OS 2.0 themes only).
+#
+# App proxy is configured in shopify.app.toml under [app_proxy].
+# The block fetches the image via the app proxy URL so no CORS issues arise.
+
+api_version = "2025-01"
+
+[[extensions]]
+type = "theme"
+name = "Generated Image Block"
+handle = "generated-image-block"
+
+[extensions.development]
+  # Point theme preview at your dev tunnel URL during development.
+  # wrangler dev --remote sets this automatically.
+  root_url = "{{DEV_ROOT_URL}}"
+
+[[extensions.settings.fields]]
+key = "heading"
+type = "single_line_text_field"
+label = "Heading"
+info = "Optional heading displayed above the generated image."
+
+[[extensions.settings.fields]]
+key = "image_max_width"
+type = "number_integer"
+label = "Max width (px)"
+info = "Maximum width of the generated image in pixels. Default: 600."
+
+[[extensions.settings.fields]]
+key = "show_alt_text"
+type = "boolean"
+label = "Show alt text below image"
+info = "Display the product's alt text as a caption."
