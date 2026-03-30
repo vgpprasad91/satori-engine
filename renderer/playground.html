@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Satori Gallery</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #09090e;
+  --surface: #111118;
+  --border: #1e1e2c;
+  --border2: #2a2a3a;
+  --text: #e8e8f0;
+  --muted: #6b6b80;
+  --accent: #7c6ef5;
+  --accent2: #6058e0;
+  --panel-w: 420px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Header ── */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(9,9,14,0.92);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.logo {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #fff;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+
+.search-wrap {
+  flex: 1;
+  max-width: 640px;
+  position: relative;
+}
+.search-wrap input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  padding: 10px 48px 10px 16px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-wrap input::placeholder { color: var(--muted); }
+.search-wrap input:focus { border-color: var(--accent); }
+.search-wrap .search-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.generate-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.1s;
+  letter-spacing: 0.2px;
+}
+.generate-btn:hover { background: #8b80f9; }
+.generate-btn:active { transform: scale(0.97); }
+.generate-btn:disabled { background: #333; color: #555; cursor: not-allowed; }
+
+.header-count {
+  font-size: 12px;
+  color: var(--muted);
+  flex-shrink: 0;
+  font-family: monospace;
+}
+
+/* ── Filter pills ── */
+.filter-bar {
+  padding: 14px 28px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.filter-bar::-webkit-scrollbar { display: none; }
+.pill {
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s;
+}
+.pill:hover { border-color: #555; color: var(--text); }
+.pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── Gallery ── */
+.gallery-wrap {
+  padding: 28px;
+  transition: padding-right 0.3s;
+}
+.gallery-wrap.panel-open { padding-right: calc(var(--panel-w) + 28px); }
+
+.masonry {
+  columns: 4 220px;
+  column-gap: 16px;
+}
+
+.tile {
+  break-inside: avoid;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.tile:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+.tile.active-tile { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+
+.gif-badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  background: rgba(0,0,0,0.72);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #a78bfa;
+  padding: 2px 6px;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.tile-skeleton {
+  width: 100%;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--border2);
+  font-size: 24px;
+}
+.tile-skeleton.loading { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.tile img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.tile-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 14px;
+  gap: 6px;
+}
+.tile:hover .tile-overlay { opacity: 1; }
+
+.tile-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+}
+.tile-cat {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.tile-customize {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 6px;
+  align-self: flex-start;
+  margin-top: 4px;
+  transition: background 0.1s;
+}
+.tile:hover .tile-customize { background: #8b80f9; }
+
+/* ── Slide-in panel ── */
+.panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: var(--panel-w);
+  height: 100vh;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+.panel.open { transform: translateX(0); }
+
+.panel-header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.panel-title { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
+.panel-cat { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.panel-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.1s;
+}
+.panel-close:hover { color: var(--text); }
+
+/* Panel preview area */
+.panel-preview {
+  background: #07070c;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-preview img {
+  max-width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  display: block;
+}
+.panel-preview .panel-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #222;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.panel-timing {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  font-size: 10px;
+  color: #444;
+  font-family: monospace;
+}
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panel-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.pf { display: flex; flex-direction: column; gap: 5px; }
+.pf label { font-size: 12px; color: #888; font-weight: 500; }
+.pf input[type="text"],
+.pf input[type="number"],
+.pf select,
+.pf textarea {
+  background: #1a1a24;
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+  width: 100%;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.pf input:focus, .pf select:focus, .pf textarea:focus { border-color: var(--accent); }
+.pf textarea { resize: vertical; min-height: 56px; }
+
+.color-row { display: flex; align-items: center; gap: 8px; }
+.color-row input[type="color"] {
+  width: 36px; height: 32px;
+  border: 1px solid var(--border2); border-radius: 6px;
+  background: #1a1a24; cursor: pointer; padding: 2px;
+}
+.color-row input[type="text"] { flex: 1; font-family: monospace; }
+
+.swatch-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.swatch {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.swatch:hover { transform: scale(1.2); }
+.swatch.active { border-color: #fff; }
+
+.preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.p-btn {
+  background: #1a1a24;
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.12s;
+  line-height: 1.3;
+}
+.p-btn:hover { border-color: #555; color: var(--text); }
+.p-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.panel-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.rerender-btn {
+  flex: 1;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.rerender-btn:hover { background: #8b80f9; }
+.rerender-btn:disabled { background: #333; color: #555; cursor: not-allowed; }
+.download-btn {
+  background: #1a1a24;
+  color: var(--text);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 11px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.download-btn:hover { border-color: #555; }
+
+/* bg picks */
+.bg-picks { display: flex; gap: 6px; flex-wrap: wrap; }
+.bg-pick {
+  background: #1a1a24;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.bg-pick:hover { border-color: #555; color: var(--text); }
+
+/* ── Empty / generating states ── */
+.gallery-status {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ── Generating spinner overlay in header ── */
+.gen-badge {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.gen-badge.visible { display: flex; }
+.gen-badge .mini-spin {
+  width: 14px; height: 14px;
+  border: 2px solid #333;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .masonry { columns: 2 160px; }
+  .panel { width: 100%; }
+  .gallery-wrap.panel-open { padding-right: 28px; }
+  .header-count { display: none; }
+}
+@media (max-width: 540px) {
+  .masonry { columns: 2 140px; column-gap: 10px; }
+  .gallery-wrap { padding: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo"><span class="logo-dot"></span>Satori</div>
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="Search variants, or describe a card to generate…" autocomplete="off" />
+    <span class="search-icon">⌕</span>
+  </div>
+  <div class="gen-badge" id="genBadge"><div class="mini-spin"></div><span id="genLabel">Generating…</span></div>
+  <button class="generate-btn" id="generateBtn" onclick="generateFromPrompt()">Generate ↵</button>
+  <span class="header-count" id="headerCount"></span>
+</header>
+
+<!-- ── Filter pills ── -->
+<div class="filter-bar" id="filterBar">
+  <button class="pill active" data-cat="all" onclick="setFilter(this)">All</button>
+  <button class="pill" data-cat="Core" onclick="setFilter(this)">Core</button>
+  <button class="pill" data-cat="Social" onclick="setFilter(this)">Social</button>
+  <button class="pill" data-cat="Business" onclick="setFilter(this)">Business</button>
+  <button class="pill" data-cat="Content" onclick="setFilter(this)">Content</button>
+  <button class="pill" data-cat="Lifestyle" onclick="setFilter(this)">Lifestyle</button>
+  <button class="pill" data-cat="Media" onclick="setFilter(this)">Media</button>
+  <button class="pill" data-cat="Fashion" onclick="setFilter(this)">Fashion</button>
+  <button class="pill" data-cat="Automotive" onclick="setFilter(this)">Automotive</button>
+  <button class="pill" data-cat="Web3" onclick="setFilter(this)">Web3</button>
+  <button class="pill" data-cat="Nonprofit" onclick="setFilter(this)">Nonprofit</button>
+  <button class="pill" data-cat="Interior" onclick="setFilter(this)">Interior</button>
+  <button class="pill" data-cat="HR" onclick="setFilter(this)">HR & Culture</button>
+  <button class="pill" data-cat="Animated" onclick="setFilter(this)">🎬 Animated</button>
+</div>
+
+<!-- ── Gallery ── -->
+<div class="gallery-wrap" id="galleryWrap">
+  <div class="masonry" id="masonry"></div>
+  <div class="gallery-status" id="galleryStatus" style="display:none">No variants match your search.</div>
+</div>
+
+<!-- ── Customise panel ── -->
+<div class="panel" id="panel">
+
+  <div class="panel-header">
+    <div>
+      <div class="panel-title" id="panelTitle">stat-hero</div>
+      <div class="panel-cat" id="panelCat">Core</div>
+    </div>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+  </div>
+
+  <div class="panel-preview" id="panelPreview">
+    <span style="font-size:32px;opacity:0.2">🎨</span>
+  </div>
+
+  <div class="panel-body">
+
+    <div>
+      <div class="panel-section-label">Preset</div>
+      <div class="preset-grid" id="panelPresetGrid">
+        <button class="p-btn" data-preset="instagram-story" onclick="setPanelPreset(this)">Instagram Story<br><small>1080×1920</small></button>
+        <button class="p-btn active" data-preset="instagram-square" onclick="setPanelPreset(this)">Instagram Square<br><small>1080×1080</small></button>
+        <button class="p-btn" data-preset="twitter-x" onclick="setPanelPreset(this)">Twitter / X<br><small>1200×675</small></button>
+        <button class="p-btn" data-preset="linkedin-post" onclick="setPanelPreset(this)">LinkedIn<br><small>1200×627</small></button>
+        <button class="p-btn" data-preset="og-image" onclick="setPanelPreset(this)">OG Image<br><small>1200×630</small></button>
+        <button class="p-btn" data-preset="facebook-post" onclick="setPanelPreset(this)">Facebook<br><small>1200×630</small></button>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-section-label">Brand</div>
+      <div class="pf">
+        <label>Brand name</label>
+        <input type="text" id="pBrandName" value="Acme Studio" />
+      </div>
+      <div class="pf" style="margin-top:10px">
+        <label>Primary color</label>
+        <div class="color-row">
+          <input type="color" id="pColorPicker" value="#5b5bd6" oninput="syncPanelColor('picker')" />
+          <input type="text" id="pColorHex" value="#5b5bd6" oninput="syncPanelColor('hex')" placeholder="#rrggbb" />
+        </div>
+      </div>
+      <div class="pf" style="margin-top:8px">
+        <div class="swatch-row" id="pSwatchRow"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-section-label">Content</div>
+      <div class="pf">
+        <label>Headline</label>
+        <input type="text" id="pHeadline" value="The future ships today" />
+      </div>
+      <div class="pf" style="margin-top:8px">
+        <label>Subheadline</label>
+        <input type="text" id="pSubheadline" value="" />
+      </div>
+      <div class="pf" style="margin-top:8px">
+        <label>Stat / Badge</label>
+        <input type="text" id="pStat" value="" />
+      </div>
+      <div class="pf" style="margin-top:8px">
+        <label>CTA text</label>
+        <input type="text" id="pCtaText" value="" />
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-section-label">Background Image</div>
+      <div class="pf">
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="pBgUrl" placeholder="Pexels or direct URL" style="flex:1" />
+          <button onclick="document.getElementById('pBgUrl').value='';schedulePanelRender()" style="background:#1a1a24;border:1px solid var(--border2);border-radius:6px;color:#888;font-size:12px;padding:0 10px;cursor:pointer;height:32px;flex-shrink:0">✕</button>
+        </div>
+      </div>
+      <div class="bg-picks" style="margin-top:8px" id="bgPicks"></div>
+    </div>
+
+    <div>
+      <div class="panel-section-label">Animation (GIF)</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#aaa;cursor:pointer">
+          <input type="checkbox" id="pAnimateToggle" onchange="onAnimateToggle()" style="accent-color:var(--accent);cursor:pointer;width:15px;height:15px">
+          Render as animated GIF
+        </label>
+      </div>
+      <div id="pAnimateOpts" style="display:none;flex-direction:column;gap:8px">
+        <div class="pf">
+          <label>Animation type</label>
+          <select id="pAnimationType" onchange="schedulePanelRender()">
+            <option value="shimmer">Shimmer — light sweep across card</option>
+            <option value="fade-in">Fade In — card fades from dark</option>
+            <option value="pulse">Pulse — gentle brightness pulse</option>
+            <option value="counter">Counter — stat number counts up</option>
+            <option value="typewriter">Typewriter — headline types out</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="pf" style="flex:1">
+            <label>Frames (2–16)</label>
+            <input type="number" id="pFrames" value="10" min="2" max="16" oninput="schedulePanelRender()" />
+          </div>
+          <div class="pf" style="flex:1">
+            <label>Speed (delay cs)</label>
+            <input type="number" id="pDelay" value="7" min="2" max="30" oninput="schedulePanelRender()" />
+          </div>
+        </div>
+        <div style="font-size:11px;color:#555;line-height:1.5">
+          GIFs render at max 480px. Works in Gmail, Apple Mail, iOS Mail.<br>Outlook shows first frame only (graceful fallback).
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-section-label">Extra (JSON)</div>
+      <div class="pf">
+        <textarea id="pExtra" placeholder='{ "rating": 5, "price": "$99" }'></textarea>
+      </div>
+    </div>
+
+  </div><!-- /panel-body -->
+
+  <div class="panel-footer">
+    <button class="rerender-btn" id="rerenderBtn" onclick="panelRender()">Re-render</button>
+    <button class="download-btn" id="downloadBtn" onclick="downloadCard()">↓ Save</button>
+  </div>
+</div><!-- /panel -->
+
+<script>
+const API_BASE = 'https://mailcraft-satori.vguruprasad91.workers.dev'
+const API_KEY  = '4a64ef407f7245d4411f53d4e96509c3d9501a62203af493cb05267581fe767f'
+
+// ─────────────────────────────────────────────────────────────
+// VARIANT CATALOG
+// Each entry: id, label, cat, preset, colors[], defaults
+// ─────────────────────────────────────────────────────────────
+const PALETTE = {
+  violet:   '#5b5bd6', navy:    '#0F3460', forest:  '#0a7c42',
+  crimson:  '#c0392b', amber:   '#f59e0b', sky:     '#0ea5e9',
+  mahogany: '#1A0F0A', salmon:  '#E8A598', slate:   '#1D3557',
+  black:    '#111111', teal:    '#0d9488', rose:    '#e11d48',
+  indigo:   '#4338ca', orange:  '#ea580c', emerald: '#059669',
+  purple:   '#7c3aed', gold:    '#b45309', cyan:    '#0891b2',
+}
+
+// ─────────────────────────────────────────────────────────────
+const VARIANTS = [
+  // ── Core ────────────────────────────────────────────────────
+  { id:'stat-hero',         label:'Stat Hero',           cat:'Core',       preset:'instagram-square', color:PALETTE.navy,    defaults:{ headline:'Revenue grew 10× this year',   stat:'10×',    subheadline:'Year-over-year growth',  ctaText:'See How' }},
+  { id:'announcement',      label:'Announcement',        cat:'Core',       preset:'twitter-x',        color:PALETTE.violet,  defaults:{ headline:'We just launched v2.0',         subheadline:'The biggest update in our history',    bgImageUrl:'https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=600' }},
+  { id:'editorial-hero',    label:'Editorial Hero',      cat:'Core',       preset:'instagram-square', color:PALETTE.mahogany,defaults:{ headline:'The Art of Slow Mornings',      subheadline:'A guide to intentional living',        bgImageUrl:'https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg?auto=compress&cs=tinysrgb&w=600' }},
+  { id:'testimonial',       label:'Testimonial',         cat:'Core',       preset:'og-image',         color:PALETTE.slate,   defaults:{ headline:'"Acme tripled our revenue in 90 days"', reviewerName:'Alex Rivera', reviewerTitle:'Head of Product', rating:5 }},
+  { id:'feature-split',     label:'Feature Split',       cat:'Core',       preset:'og-image',         color:PALETTE.indigo,  defaults:{ headline:'Ship faster with Acme',         subheadline:'Zero-config deployment for modern teams' }},
+  { id:'tip-card',          label:'Tip Card',            cat:'Core',       preset:'instagram-square', color:PALETTE.emerald, defaults:{ headline:'Always write tests first',      subheadline:'TDD reduces bugs by 40%' }},
+  { id:'quote-overlay',     label:'Quote Overlay',       cat:'Core',       preset:'instagram-square', color:PALETTE.crimson, defaults:{ headline:'"The best time to plant a tree was 20 years ago."' }},
+  { id:'benefit-strip',     label:'Benefit Strip',       cat:'Core',       preset:'og-image',         color:PALETTE.teal,    defaults:{ headline:'Why 10,000 teams choose Acme',  subheadline:'Built for scale from day one' }},
+  { id:'recipe-hero',       label:'Recipe Hero',         cat:'Core',       preset:'instagram-square', color:PALETTE.orange,  defaults:{ headline:'Lemon Ricotta Pancakes',        subheadline:'Ready in 20 minutes · Serves 4',       bgImageUrl:'https://images.pexels.com/photos/6462179/pexels-photo-6462179.jpeg?auto=compress&cs=tinysrgb&w=600' }},
+  { id:'product-showcase',  label:'Product Showcase',    cat:'Core',       preset:'instagram-square', color:PALETTE.violet,  defaults:{ headline:'Studio Headphones Pro',         subheadline:'32-hour battery · Active noise cancellation', price:'$189', ctaText:'Shop Now', bgImageUrl:'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=600' }},
+  { id:'coupon-offer',      label:'Coupon Offer',        cat:'Core',       preset:'instagram-square', color:PALETTE.crimson, defaults:{ headline:'30% off everything',             couponCode:'SAVE30', expiryText:'Expires Sunday' }},
+  { id:'event-card',        label:'Event Card',          cat:'Core',       preset:'instagram-square', color:PALETTE.navy,    defaults:{ headline:'Design Systems Summit 2025',   subheadline:'A one-day deep-dive for product teams', eventDate:'Dec 14', eventTime:'7:00 PM', eventLocation:'San Francisco, CA' }},
+  { id:'video-thumbnail',   label:'Video Thumbnail',     cat:'Core',       preset:'og-image',         color:PALETTE.crimson, defaults:{ headline:'I built a SaaS in 30 days',     subheadline:'Here is exactly how I did it' }},
+  { id:'countdown-timer',   label:'Countdown Timer',     cat:'Core',       preset:'instagram-square', color:PALETTE.violet,  defaults:{ headline:'Sale ends in…',                subheadline:'Up to 50% off storewide' }},
+  { id:'course-launch',     label:'Course Launch',       cat:'Core',       preset:'instagram-square', color:PALETTE.indigo,  defaults:{ headline:'Mastering TypeScript',          subheadline:'From zero to senior dev in 8 weeks', ctaText:'Enroll Now' }},
+  { id:'feature-launch',    label:'Feature Launch',      cat:'Core',       preset:'og-image',         color:PALETTE.teal,    defaults:{ headline:'Introducing Dark Mode',         subheadline:'Built from the ground up for night owls' }},
+  { id:'flash-deal',        label:'Flash Deal',          cat:'Core',       preset:'instagram-square', color:PALETTE.orange,  defaults:{ headline:'Flash Sale — 4 Hours Only',     subheadline:'40% off all annual plans' }},
+  { id:'social-proof',      label:'Social Proof',        cat:'Core',       preset:'og-image',         color:PALETTE.forest,  defaults:{ headline:'Trusted by 50,000 teams',       subheadline:'Join the fastest-growing dev platform' }},
+  { id:'transformation',    label:'Transformation',      cat:'Core',       preset:'og-image',         color:PALETTE.emerald, defaults:{ headline:'Before & After: 90 Day Challenge', subheadline:'Real results from real customers' }},
+  { id:'waitlist-signup',   label:'Waitlist Signup',     cat:'Core',       preset:'instagram-square', color:PALETTE.violet,  defaults:{ headline:'Join the waitlist',             subheadline:'Be first to access our private beta', ctaText:'Get Early Access' }},
+  { id:'new-arrival',       label:'New Arrival',         cat:'Core',       preset:'instagram-square', color:PALETTE.black,   defaults:{ headline:'Just Dropped',                 subheadline:'Limited units available' }},
+  { id:'price-drop',        label:'Price Drop',          cat:'Core',       preset:'instagram-square', color:PALETTE.crimson, defaults:{ headline:'Price just dropped 🔥',         subheadline:'Grab it before it sells out' }},
+  { id:'pricing-card',      label:'Pricing Card',        cat:'Core',       preset:'og-image',         color:PALETTE.indigo,  defaults:{ headline:'Pro Plan',                     subheadline:'Everything you need to grow', price:'$49/mo', ctaText:'Start Free Trial' }},
+
+  // ── Media ───────────────────────────────────────────────────
+  { id:'spotify-now-playing',label:'Spotify Now Playing',cat:'Media',     preset:'og-image',         color:PALETTE.forest,  defaults:{ headline:'Now Playing',                  spotifyTrack:'Midnight Rain', spotifyArtist:'Taylor Swift', spotifyProgress:62 }},
+  { id:'youtube-stats',     label:'YouTube Stats',       cat:'Media',      preset:'og-image',         color:PALETTE.crimson, defaults:{ headline:'1M subscribers milestone 🎉',  stat:'1M',     subheadline:'Thank you for being here' }},
+  { id:'podcast-cover',     label:'Podcast Cover',       cat:'Media',      preset:'instagram-square', color:PALETTE.navy,    defaults:{ headline:'The Product Lab',              subheadline:'Episode 47 — Building in public', episodeNumber:'EP. 47', host:'Sarah Chen' }},
+  { id:'podcast-milestones',label:'Podcast Milestones',  cat:'Media',      preset:'instagram-square', color:PALETTE.violet,  defaults:{ headline:'100 Episodes Strong',          subheadline:'Thank you for listening', stat:'100' }},
+  { id:'movie-poster',      label:'Movie Poster',        cat:'Media',      preset:'instagram-story',  color:PALETTE.mahogany,defaults:{ headline:'The Last Algorithm',           subheadline:'In theatres December 2025' }},
+  { id:'live-stream-alert', label:'Live Stream Alert',   cat:'Media',      preset:'og-image',         color:PALETTE.crimson, defaults:{ headline:'Going LIVE in 10 minutes',     subheadline:'Coding a full SaaS from scratch', streamViewers:'3.2K' }},
+  { id:'album-art',         label:'Album Art',           cat:'Media',      preset:'instagram-square', color:PALETTE.black,   defaults:{ headline:'After Midnight',               subheadline:'The new LP from Neon Atlas' }},
+
+  // ── Social ──────────────────────────────────────────────────
+  { id:'tweet-card',        label:'Tweet Card',          cat:'Social',     preset:'twitter-x',        color:PALETTE.sky,     defaults:{ headline:'Hot take: The best code is no code. Ship the outcome, not the implementation.', tweetHandle:'@acmestudio', tweetLikes:'4.2K', tweetRetweets:'891' }},
+  { id:'github-stats',      label:'GitHub Stats',        cat:'Social',     preset:'og-image',         color:PALETTE.black,   defaults:{ headline:'acme/renderer',                subheadline:'The fastest way to generate social cards', githubRepo:'acme/renderer', githubStars:'12.4k', githubForks:'847' }},
+  { id:'code-snippet',      label:'Code Snippet',        cat:'Social',     preset:'og-image',         color:PALETTE.black,   defaults:{ headline:'Ship a PNG in 3 lines',        codeLanguage:'TypeScript', codeLines:['const png = await client.render({','  variant: "stat-hero",','  primaryColor: "#0F3460",','})'] }},
+  { id:'linkedin-article',  label:'LinkedIn Article',    cat:'Social',     preset:'linkedin-post',    color:PALETTE.slate,   defaults:{ headline:'5 things I learned after 10 years of building products', subheadline:'A reflection on product, people, and pace' }},
+  { id:'discord-announcement',label:'Discord Announce',  cat:'Social',     preset:'og-image',         color:PALETTE.indigo,  defaults:{ headline:'🚀 New feature shipped',       subheadline:'Head to #changelog to see what\'s new' }},
+  { id:'instagram-quote',   label:'Instagram Quote',     cat:'Social',     preset:'instagram-square', color:PALETTE.rose,    defaults:{ headline:'"Start before you\'re ready. Refine as you go."' }},
+  { id:'tiktok-caption',    label:'TikTok Caption',      cat:'Social',     preset:'instagram-story',  color:PALETTE.violet,  defaults:{ headline:'POV: you finally shipped it',  subheadline:'3 months of coding → live in production' }},
+  { id:'changelog-card',    label:'Changelog Card',      cat:'Social',     preset:'og-image',         color:PALETTE.teal,    defaults:{ headline:'v3.1.0 Release Notes',         subheadline:'Performance + stability improvements' }},
+
+  // ── Business ────────────────────────────────────────────────
+  { id:'business-card',     label:'Business Card',       cat:'Business',   preset:'og-image',         color:PALETTE.navy,    defaults:{ headline:'Jamie Chen',                   subheadline:'Head of Engineering', phone:'+1 415 555 0147', email:'jamie@acme.io', website:'acme.io' }},
+  { id:'sports-score',      label:'Sports Score',        cat:'Business',   preset:'twitter-x',        color:PALETTE.crimson, defaults:{ headline:'Match Result',                 teamA:'Hawks', teamB:'Lions', scoreA:'3', scoreB:'2', matchStatus:'FT' }},
+  { id:'gaming-achievement',label:'Gaming Achievement',  cat:'Business',   preset:'og-image',         color:PALETTE.violet,  defaults:{ headline:'Achievement Unlocked',         subheadline:'Top 1% ranked player', achievement:'Diamond I', xpGained:'+1250 XP' }},
+  { id:'proposal-cover',    label:'Proposal Cover',      cat:'Business',   preset:'og-image',         color:PALETTE.navy,    defaults:{ headline:'Q1 Growth Strategy',           subheadline:'A roadmap for 3× revenue growth' }},
+  { id:'award-badge',       label:'Award Badge',         cat:'Business',   preset:'instagram-square', color:PALETTE.gold,    defaults:{ headline:'Best Design Tool 2025',        subheadline:'Awarded by Product Hunt community' }},
+  { id:'receipt-card',      label:'Receipt Card',        cat:'Business',   preset:'og-image',         color:PALETTE.black,   defaults:{ headline:'Payment confirmed',            subheadline:'Your Pro subscription is active', price:'$49.00' }},
+  { id:'qr-code-card',      label:'QR Code Card',        cat:'Business',   preset:'instagram-square', color:PALETTE.teal,    defaults:{ headline:'Scan to download',             subheadline:'Get the app free on iOS & Android' }},
+  { id:'team-member',       label:'Team Member',         cat:'Business',   preset:'instagram-square', color:PALETTE.slate,   defaults:{ headline:'Alex Rivera',                  subheadline:'Senior Product Designer', reviewerName:'Alex Rivera', reviewerTitle:'Senior Product Designer' }},
+
+  // ── Content ─────────────────────────────────────────────────
+  { id:'newsletter-header', label:'Newsletter Header',   cat:'Content',    preset:'og-image',         color:PALETTE.navy,    defaults:{ headline:'The Weekly Dispatch',          subheadline:'Design, code, and product insights', issueNumber:'Issue #92', author:'The Team' }},
+  { id:'book-cover',        label:'Book Cover',          cat:'Content',    preset:'instagram-story',  color:PALETTE.mahogany,defaults:{ headline:'The Leverage Principle',       subheadline:'How to 10× your output without burning out', author:'Morgan Blake' }},
+  { id:'google-review',     label:'Google Review',       cat:'Content',    preset:'og-image',         color:PALETTE.forest,  defaults:{ headline:'"Absolutely transformed how our team ships."', reviewerName:'Sam T.', rating:5, reviewPlatform:'Google' }},
+  { id:'blog-post-card',    label:'Blog Post Card',      cat:'Content',    preset:'og-image',         color:PALETTE.indigo,  defaults:{ headline:'How we cut deploy time by 80%', subheadline:'A deep dive into our CI/CD pipeline', readTime:'8 min read', category:'Engineering', publishDate:'Nov 2025' }},
+  { id:'press-release',     label:'Press Release',       cat:'Content',    preset:'og-image',         color:PALETTE.slate,   defaults:{ headline:'Acme raises $12M Series A',   subheadline:'To accelerate AI-powered card generation' }},
+  { id:'infographic-stat',  label:'Infographic Stat',    cat:'Content',    preset:'instagram-square', color:PALETTE.teal,    defaults:{ headline:'Developer Productivity Study', stat:'3.2×',  subheadline:'Faster shipping with AI-assisted code' }},
+  { id:'star-rating',       label:'Star Rating',         cat:'Content',    preset:'og-image',         color:PALETTE.amber,   defaults:{ headline:'Customer satisfaction score',  rating:4.8, reviewCount:'2,847 reviews' }},
+  { id:'gift-card',         label:'Gift Card',           cat:'Content',    preset:'instagram-square', color:PALETTE.rose,    defaults:{ headline:'Give the gift of Acme Pro',   subheadline:'Valid for any plan · No expiry', price:'$50' }},
+  { id:'loyalty-card',      label:'Loyalty Card',        cat:'Content',    preset:'instagram-square', color:PALETTE.gold,    defaults:{ headline:'Gold Member',                  subheadline:'You\'ve earned 2,450 points', loyaltyPoints:'2,450', loyaltyTier:'Gold' }},
+
+  // ── Lifestyle ───────────────────────────────────────────────
+  { id:'travel-destination',label:'Travel Destination',  cat:'Lifestyle',  preset:'instagram-square', color:PALETTE.teal,    defaults:{ headline:'Kyoto in Cherry Blossom',      subheadline:'10 nights · From $2,400', destination:'Kyoto, Japan', travelDuration:'10 nights', price:'From $2,400', bgImageUrl:'https://images.pexels.com/photos/2506923/pexels-photo-2506923.jpeg?auto=compress&cs=tinysrgb&w=600' }},
+  { id:'cocktail-recipe',   label:'Cocktail Recipe',     cat:'Lifestyle',  preset:'instagram-square', color:PALETTE.amber,   defaults:{ headline:'Espresso Negroni',             subheadline:'Stirred, not shaken', alcoholContent:'ABV ~22%', servings:'1', bgImageUrl:'https://images.pexels.com/photos/1268558/pexels-photo-1268558.jpeg?auto=compress&cs=tinysrgb&w=600' }},
+  { id:'health-metrics',    label:'Health Metrics',      cat:'Lifestyle',  preset:'instagram-square', color:PALETTE.emerald, defaults:{ headline:'Weekly check-in',              subheadline:'You\'re trending up', steps:'9,214', heartRate:'68 bpm', sleepHours:'7h 42m' }},
+  { id:'savings-goal',      label:'Savings Goal',        cat:'Lifestyle',  preset:'instagram-square', color:PALETTE.forest,  defaults:{ headline:'Emergency Fund',               subheadline:'73% of the way there', savingsGoal:'$10,000', savedAmount:'$7,340', savingsProgress:73 }},
+  { id:'birthday-card',     label:'Birthday Card',       cat:'Lifestyle',  preset:'instagram-square', color:PALETTE.rose,    defaults:{ headline:'Happy Birthday, Jamie! 🎉',   subheadline:'Wishing you the best year yet' }},
+  { id:'workout-plan',      label:'Workout Plan',        cat:'Lifestyle',  preset:'instagram-square', color:PALETTE.crimson, defaults:{ headline:'Push Day',                     subheadline:'Chest · Shoulders · Triceps', workoutType:'Strength', difficulty:'Medium' }},
+  { id:'nutrition-facts',   label:'Nutrition Facts',     cat:'Lifestyle',  preset:'instagram-story',  color:PALETTE.emerald, defaults:{ headline:'Avocado Toast Macros',         subheadline:'Per serving · 380 kcal' }},
+  { id:'referral-card',     label:'Referral Card',       cat:'Lifestyle',  preset:'instagram-square', color:PALETTE.violet,  defaults:{ headline:'Refer a friend, earn $25',    subheadline:'Share your code to get started', referralBonus:'$25 credit', couponCode:'FRIEND25' }},
+
+  // ── Automotive ──────────────────────────────────────────────
+  { id:'car-listing',       label:'Car Listing',         cat:'Automotive', preset:'og-image',         color:PALETTE.slate,   defaults:{ headline:'2024 Tesla Model 3',           subheadline:'8,200 mi · Autopilot · Like new', vehicleMake:'Tesla', vehicleModel:'Model 3', vehicleYear:2024, vehicleMileage:'8,200 mi', price:'$39,900' }},
+  { id:'test-drive-cta',    label:'Test Drive CTA',      cat:'Automotive', preset:'og-image',         color:PALETTE.crimson, defaults:{ headline:'Book a test drive today',      subheadline:'No pressure. Just the open road.', ctaText:'Book Now' }},
+
+  // ── Fashion ─────────────────────────────────────────────────
+  { id:'lookbook-card',     label:'Lookbook Card',       cat:'Fashion',    preset:'instagram-story',  color:PALETTE.black,   defaults:{ headline:'Autumn Edit 2025',             subheadline:'Minimal. Intentional. Effortless.' }},
+  { id:'style-drop',        label:'Style Drop',          cat:'Fashion',    preset:'instagram-square', color:PALETTE.mahogany,defaults:{ headline:'Midnight Capsule',             subheadline:'Limited to 200 pieces', collection:'Midnight Capsule', badge:'Limited Edition' }},
+  { id:'fashion-sale',      label:'Fashion Sale',        cat:'Fashion',    preset:'instagram-square', color:PALETTE.black,   defaults:{ headline:'End of Season Sale',           subheadline:'40% off selected items', badge:'-40%', originalPrice:'$320', price:'$192', sizes:['XS','S','M','L','XL'] }},
+
+  // ── Web3 ────────────────────────────────────────────────────
+  { id:'nft-showcase',      label:'NFT Showcase',        cat:'Web3',       preset:'instagram-square', color:PALETTE.violet,  defaults:{ headline:'Genesis Collection',           subheadline:'Only 1,000 ever minted', nftPrice:'2.5 ETH', nftEdition:'1 of 1000', blockchain:'Ethereum' }},
+  { id:'token-launch',      label:'Token Launch',        cat:'Web3',       preset:'og-image',         color:PALETTE.indigo,  defaults:{ headline:'CRAFT Token Launch',           subheadline:'The utility token powering Acme DAO', tokenSymbol:'CRAFT', tokenPrice:'$0.042', tokenChange:'+18.4%' }},
+  { id:'dao-proposal',      label:'DAO Proposal',        cat:'Web3',       preset:'og-image',         color:PALETTE.slate,   defaults:{ headline:'Treasury diversification vote', subheadline:'Proposal #247 · Voting ends in 48h', daoName:'AcmeDAO', proposalId:'#247' }},
+
+  // ── Nonprofit ───────────────────────────────────────────────
+  { id:'donation-progress', label:'Donation Progress',   cat:'Nonprofit',  preset:'og-image',         color:PALETTE.emerald, defaults:{ headline:'Help us reach $500K',          subheadline:'Every dollar goes directly to the cause', donationGoal:'$500,000', donationRaised:'$412,000', donationProgress:82 }},
+  { id:'impact-stats',      label:'Impact Stats',        cat:'Nonprofit',  preset:'instagram-square', color:PALETTE.teal,    defaults:{ headline:'10,000 children helped',       subheadline:'In 2025 alone', impactStat:'10,000+', impactLabel:'children served' }},
+  { id:'charity-appeal',    label:'Charity Appeal',      cat:'Nonprofit',  preset:'instagram-square', color:PALETTE.crimson, defaults:{ headline:'Be the reason someone smiles today', subheadline:'Your $10 feeds a family for a week', ctaText:'Donate Now' }},
+  { id:'volunteer-cta',     label:'Volunteer CTA',       cat:'Nonprofit',  preset:'og-image',         color:PALETTE.forest,  defaults:{ headline:'We need your help',            subheadline:'Join 450+ volunteers making a difference', volunteerCount:'450+' }},
+
+  // ── Interior ────────────────────────────────────────────────
+  { id:'room-reveal',       label:'Room Reveal',         cat:'Interior',   preset:'instagram-square', color:PALETTE.amber,   defaults:{ headline:'Living Room Transformation',   subheadline:'Scandinavian minimal · $4,200 total budget', roomType:'Living Room', designStyle:'Scandinavian' }},
+  { id:'project-showcase',  label:'Project Showcase',    cat:'Interior',   preset:'og-image',         color:PALETTE.gold,    defaults:{ headline:'The Hamptons Renovation',      subheadline:'14-week full-home transformation', projectBudget:'$85,000', projectDuration:'14 weeks' }},
+  { id:'material-moodboard',label:'Material Moodboard',  cat:'Interior',   preset:'instagram-square', color:PALETTE.amber,   defaults:{ headline:'Warm Minimalist Palette',      subheadline:'Oak · Linen · Travertine', designStyle:'Warm Minimalist' }},
+  { id:'design-consultation',label:'Design Consultation',cat:'Interior',   preset:'og-image',         color:PALETTE.gold,    defaults:{ headline:'Free 30-min design call',      subheadline:'Let\'s bring your vision to life', ctaText:'Book Now' }},
+
+  // ── HR & Culture ────────────────────────────────────────────
+  { id:'employee-spotlight',label:'Employee Spotlight',  cat:'HR',         preset:'instagram-square', color:PALETTE.slate,   defaults:{ headline:'Meet Sarah Chen',              subheadline:'Senior Engineer · 5 years at Acme', employeeName:'Sarah Chen', employeeDept:'Engineering' }},
+  { id:'company-benefits',  label:'Company Benefits',    cat:'HR',         preset:'og-image',         color:PALETTE.teal,    defaults:{ headline:'Why people love working here',subheadline:'More than a job — a mission', benefits:['Remote First','Unlimited PTO','401k 4% Match','Full Health Coverage'] }},
+  { id:'open-roles',        label:'Open Roles',          cat:'HR',         preset:'og-image',         color:PALETTE.indigo,  defaults:{ headline:'We\'re hiring!',               subheadline:'12 open roles across product and engineering', openRoles:12 }},
+
+  // ── Animated GIFs ───────────────────────────────────────────
+  { id:'stat-hero',         label:'Stat Hero — Counter', cat:'Animated',   preset:'og-image',         color:PALETTE.navy,    animated:true, animation:'counter',    defaults:{ headline:'Revenue grew this year', stat:'10×', subheadline:'Year-over-year growth' }},
+  { id:'stat-hero',         label:'Stat Hero — Shimmer', cat:'Animated',   preset:'og-image',         color:PALETTE.violet,  animated:true, animation:'shimmer',    defaults:{ headline:'The future ships today', stat:'99%', subheadline:'Uptime guaranteed' }, _uid:'stat-hero-shimmer' },
+  { id:'announcement',      label:'Announcement — Fade', cat:'Animated',   preset:'twitter-x',        color:PALETTE.indigo,  animated:true, animation:'fade-in',    defaults:{ headline:'We just launched v2.0', subheadline:'The biggest update yet', bgImageUrl:'https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=600' }, _uid:'announcement-fade' },
+  { id:'editorial-hero',    label:'Editorial — Pulse',   cat:'Animated',   preset:'instagram-square', color:PALETTE.mahogany,animated:true, animation:'pulse',      defaults:{ headline:'The Art of Slow Mornings', subheadline:'A guide to intentional living', bgImageUrl:'https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg?auto=compress&cs=tinysrgb&w=600' }, _uid:'editorial-pulse' },
+  { id:'testimonial',       label:'Testimonial — Fade',  cat:'Animated',   preset:'og-image',         color:PALETTE.slate,   animated:true, animation:'fade-in',    defaults:{ headline:'"Acme tripled our revenue"', reviewerName:'Alex Rivera', reviewerTitle:'Head of Product', rating:5 }, _uid:'testimonial-fade' },
+  { id:'coupon-offer',      label:'Coupon — Shimmer',    cat:'Animated',   preset:'instagram-square', color:PALETTE.crimson, animated:true, animation:'shimmer',    defaults:{ headline:'30% off everything', couponCode:'SAVE30', expiryText:'Expires Sunday' }, _uid:'coupon-shimmer' },
+  { id:'event-card',        label:'Event — Typewriter',  cat:'Animated',   preset:'instagram-square', color:PALETTE.navy,    animated:true, animation:'typewriter', defaults:{ headline:'Design Systems Summit 2025', subheadline:'Dec 14 · San Francisco', eventDate:'Dec 14', eventTime:'7:00 PM', eventLocation:'San Francisco, CA' }, _uid:'event-typewriter' },
+  { id:'waitlist-signup',   label:'Waitlist — Counter',  cat:'Animated',   preset:'instagram-square', color:PALETTE.violet,  animated:true, animation:'counter',    defaults:{ headline:'Join the waitlist', stat:'4,821', subheadline:'people already signed up', ctaText:'Get Early Access' }, _uid:'waitlist-counter' },
+]
+
+// ─────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────
+let activeFilter   = 'all'
+let searchQuery    = ''
+let activeTileId   = null
+let panelPreset    = 'instagram-square'
+let panelRendering = false
+let panelDebounce  = null
+let currentBlobUrl = null
+let tileImageCache = {}      // variant id → blob URL
+
+// ─────────────────────────────────────────────────────────────
+// FILTER + SEARCH
+// ─────────────────────────────────────────────────────────────
+function setFilter(btn) {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'))
+  btn.classList.add('active')
+  activeFilter = btn.dataset.cat
+  renderGallery()
+}
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchQuery = e.target.value.toLowerCase().trim()
+  renderGallery()
+})
+
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') generateFromPrompt()
+})
+
+// Unique key per variant entry (animated variants share variant id but differ by _uid)
+function vkey(v) { return v._uid || v.id }
+
+function filteredVariants() {
+  return VARIANTS.filter(v => {
+    const catMatch = activeFilter === 'all' || v.cat === activeFilter
+    const q = searchQuery
+    const txtMatch = !q || v.id.includes(q) || v.label.toLowerCase().includes(q) || v.cat.toLowerCase().includes(q)
+    return catMatch && txtMatch
+  })
+}
+
+// ─────────────────────────────────────────────────────────────
+// GALLERY RENDER
+// ─────────────────────────────────────────────────────────────
+function renderGallery() {
+  const masonry = document.getElementById('masonry')
+  const status  = document.getElementById('galleryStatus')
+  const list    = filteredVariants()
+
+  document.getElementById('headerCount').textContent = `${VARIANTS.length} variants`
+
+  if (!list.length) {
+    masonry.innerHTML = ''
+    status.style.display = 'block'
+    return
+  }
+  status.style.display = 'none'
+
+  // Keep existing tiles if possible; only add missing ones
+  const existing = new Set(Array.from(masonry.querySelectorAll('.tile')).map(t => t.dataset.vkey))
+  const needed   = new Set(list.map(vkey))
+
+  // Remove tiles no longer needed
+  masonry.querySelectorAll('.tile').forEach(t => {
+    if (!needed.has(t.dataset.vkey)) t.remove()
+  })
+
+  // Add tiles not yet in grid
+  list.forEach(v => {
+    if (existing.has(vkey(v))) return
+    masonry.appendChild(buildTile(v))
+  })
+
+  // Re-order tiles to match filtered order
+  list.forEach(v => {
+    const tile = masonry.querySelector(`[data-vkey="${vkey(v)}"]`)
+    if (tile) masonry.appendChild(tile)
+  })
+
+  // Observe all tiles without images yet
+  masonry.querySelectorAll('.tile').forEach(tile => {
+    if (!tile.querySelector('img') && !tile.classList.contains('observed')) {
+      tile.classList.add('observed')
+      tileObserver.observe(tile)
+    }
+  })
+}
+
+function buildTile(v) {
+  const aspectMap = {
+    'instagram-square': '1/1',
+    'instagram-story':  '9/16',
+    'twitter-x':        '200/113',
+    'og-image':         '120/63',
+    'linkedin-post':    '191/100',
+    'facebook-post':    '120/63',
+  }
+  const ratio  = aspectMap[v.preset] || '1/1'
+  const key    = vkey(v)
+  const gifBadge = v.animated ? '<div class="gif-badge">GIF</div>' : ''
+
+  const tile = document.createElement('div')
+  tile.className = 'tile' + (activeTileId === key ? ' active-tile' : '')
+  tile.dataset.vkey = key
+  tile.onclick = () => openPanel(v)
+
+  if (tileImageCache[key]) {
+    const tag = v.animated ? 'img' : 'img'   // both use <img>; GIF auto-plays
+    tile.innerHTML = `
+      <img src="${tileImageCache[key]}" alt="${v.label}" loading="lazy">
+      ${gifBadge}
+      <div class="tile-overlay">
+        <div class="tile-cat">${v.cat}</div>
+        <div class="tile-label">${v.label}</div>
+        <div class="tile-customize">Customize ↗</div>
+      </div>`
+  } else {
+    tile.innerHTML = `
+      <div class="tile-skeleton loading" style="aspect-ratio:${ratio};font-size:28px">⬜</div>
+      ${gifBadge}
+      <div class="tile-overlay">
+        <div class="tile-cat">${v.cat}</div>
+        <div class="tile-label">${v.label}</div>
+        <div class="tile-customize">Customize ↗</div>
+      </div>`
+  }
+  return tile
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER QUEUE — viewport-aware, priority-ordered.
+//
+// Rules:
+//  1. Max RENDER_CONCURRENCY simultaneous fetches (= worker slots).
+//  2. visibleVids tracks tiles currently in the viewport.
+//  3. When a tile LEAVES the viewport it is pruned from the
+//     pending queue (scroll-thrash cancellation).
+//  4. When a tile ENTERS, it is pushed to the FRONT of the queue
+//     so currently-visible tiles always render before off-screen
+//     tiles that slipped in during a fast scroll.
+//  5. renderTile checks visibleVids before firing; if the tile is
+//     no longer visible it is re-observed so it can re-enter later.
+// ─────────────────────────────────────────────────────────────
+const RENDER_CONCURRENCY = 4
+let   activeRenders      = 0
+const renderQueue        = []          // [{ tile, vid, retries }]
+const visibleVids        = new Set()   // vids currently in viewport
+const inProgressVids     = new Set()   // vids currently being fetched
+
+function enqueueRender(tile, vid) {
+  if (inProgressVids.has(vid))                        return
+  if (tileImageCache[vid] || tile.querySelector('img')) return
+  const idx = renderQueue.findIndex(r => r.vid === vid)
+  if (idx !== -1) renderQueue.splice(idx, 1)
+  if (visibleVids.has(vid)) {
+    renderQueue.unshift({ tile, vid, retries: 0 })
+  } else {
+    renderQueue.push({ tile, vid, retries: 0 })
+  }
+  drainRenderQueue()
+}
+
+function cancelStaleQueueEntries() {
+  for (let i = renderQueue.length - 1; i >= 0; i--) {
+    const { vid, tile } = renderQueue[i]
+    if (!visibleVids.has(vid)) {
+      renderQueue.splice(i, 1)
+      if (!tileImageCache[vid] && !tile.querySelector('img')) {
+        tile.classList.remove('observed')
+        tileObserver.observe(tile)
+      }
+    }
+  }
+}
+
+function drainRenderQueue() {
+  while (activeRenders < RENDER_CONCURRENCY && renderQueue.length > 0) {
+    const job = renderQueue.shift()
+    if (!visibleVids.has(job.vid) && renderQueue.some(r => visibleVids.has(r.vid))) {
+      renderQueue.push(job)
+      continue
+    }
+    inProgressVids.add(job.vid)
+    activeRenders++
+    renderTile(job.tile, job.vid, job.retries).finally(() => {
+      inProgressVids.delete(job.vid)
+      activeRenders--
+      drainRenderQueue()
+    })
+  }
+}
+
+// ── Single observer handles both ENTER and EXIT events.
+const tileObserver = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    const tile = entry.target
+    const vid  = tile.dataset.vkey   // use vkey not vid
+
+    if (entry.isIntersecting) {
+      visibleVids.add(vid)
+      if (tileImageCache[vid] || tile.querySelector('img')) return
+      tileObserver.unobserve(tile)
+      tile.classList.add('observed')
+      enqueueRender(tile, vid)
+    } else {
+      visibleVids.delete(vid)
+      cancelStaleQueueEntries()
+    }
+  })
+}, { rootMargin: '80px' })
+
+function tileError(tile, key, msg) {
+  const skel = tile.querySelector('.tile-skeleton')
+  if (!skel) return
+  skel.classList.remove('loading')
+  skel.textContent = '⚠'
+  skel.style.cssText += ';color:#555;cursor:pointer'
+  skel.title = msg + ' — click to retry'
+  skel.onclick = () => {
+    skel.textContent = '⬜'
+    skel.style.cursor = ''
+    skel.onclick = null
+    tile.classList.remove('observed')
+    tileObserver.observe(tile)
+  }
+}
+
+async function renderTile(tile, key, retries = 0) {
+  const v = VARIANTS.find(x => vkey(x) === key)
+  if (!v) return
+
+  if (!visibleVids.has(key) && retries === 0) {
+    tile.classList.remove('observed')
+    tileObserver.observe(tile)
+    return
+  }
+
+  const skel = tile.querySelector('.tile-skeleton')
+  if (skel) skel.classList.add('loading')
+
+  const endpoint = v.animated ? '/render-animated' : '/render'
+  const payload  = buildPayload(v.id, v.color, v.preset, v.defaults)
+  if (v.animated) {
+    payload.animation = v.animation || 'shimmer'
+    payload.frames    = 10
+    payload.delay     = 7
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+      body: JSON.stringify(payload),
+    })
+
+    if (!res.ok) {
+      if (retries < 1 && res.status >= 500) {
+        await new Promise(r => setTimeout(r, 1000 + Math.random() * 600))
+        renderQueue.unshift({ tile, vid: key, retries: retries + 1 })
+      } else {
+        tileError(tile, key, `HTTP ${res.status}`)
+      }
+      return
+    }
+
+    const mime     = v.animated ? 'image/gif' : 'image/png'
+    const blob     = new Blob([await res.arrayBuffer()], { type: mime })
+    const url      = URL.createObjectURL(blob)
+    tileImageCache[key] = url
+    const gifBadge = v.animated ? '<div class="gif-badge">GIF</div>' : ''
+    tile.innerHTML = `
+      <img src="${url}" alt="${v.label}" loading="lazy">
+      ${gifBadge}
+      <div class="tile-overlay">
+        <div class="tile-cat">${v.cat}</div>
+        <div class="tile-label">${v.label}</div>
+        <div class="tile-customize">Customize ↗</div>
+      </div>`
+  } catch {
+    if (retries < 1) {
+      await new Promise(r => setTimeout(r, 1200 + Math.random() * 800))
+      renderQueue.unshift({ tile, vid: key, retries: retries + 1 })
+    } else {
+      tileError(tile, key, 'Network error')
+    }
+  }
+}
+
+function buildPayload(variant, color, preset, extra = {}) {
+  const v = VARIANTS.find(x => x.id === variant)
+  const brandName = v?.defaults?.brandName || 'Acme Studio'
+  return {
+    variant,
+    brandName,
+    primaryColor: color,
+    headline: v?.defaults?.headline || 'The future ships today',
+    preset: preset || 'instagram-square',
+    tokens: { _cb: String(Date.now()) },
+    ...extra,
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// PANEL
+// ─────────────────────────────────────────────────────────────
+const SWATCHES = [
+  '#0F3460','#1D3557','#5b5bd6','#7c3aed','#0ea5e9',
+  '#0a7c42','#c0392b','#e11d48','#f59e0b','#111111',
+]
+
+function buildSwatches() {
+  const row = document.getElementById('pSwatchRow')
+  SWATCHES.forEach(c => {
+    const sw = document.createElement('div')
+    sw.className = 'swatch'
+    sw.style.background = c
+    sw.title = c
+    sw.onclick = () => {
+      document.querySelectorAll('#pSwatchRow .swatch').forEach(s => s.classList.remove('active'))
+      sw.classList.add('active')
+      document.getElementById('pColorPicker').value = c
+      document.getElementById('pColorHex').value    = c
+      schedulePanelRender()
+    }
+    row.appendChild(sw)
+  })
+}
+
+function buildBgPicks() {
+  const picks = [
+    { label:'City Night',  url:'https://images.pexels.com/photos/1105766/pexels-photo-1105766.jpeg' },
+    { label:'Forest',      url:'https://images.pexels.com/photos/167698/pexels-photo-167698.jpeg'   },
+    { label:'Ocean',       url:'https://images.pexels.com/photos/1295036/pexels-photo-1295036.jpeg' },
+    { label:'Coffee',      url:'https://images.pexels.com/photos/302899/pexels-photo-302899.jpeg'   },
+    { label:'Dark Tech',   url:'https://images.pexels.com/photos/1714208/pexels-photo-1714208.jpeg' },
+    { label:'Mountains',   url:'https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg'   },
+    { label:'Workspace',   url:'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg' },
+    { label:'Abstract',    url:'https://images.pexels.com/photos/2693212/pexels-photo-2693212.png'  },
+  ]
+  const container = document.getElementById('bgPicks')
+  picks.forEach(p => {
+    const btn = document.createElement('button')
+    btn.className = 'bg-pick'
+    btn.textContent = p.label
+    btn.title = p.url
+    btn.onclick = () => {
+      document.getElementById('pBgUrl').value = p.url
+      schedulePanelRender()
+    }
+    container.appendChild(btn)
+  })
+}
+
+function onAnimateToggle() {
+  const on = document.getElementById('pAnimateToggle').checked
+  document.getElementById('pAnimateOpts').style.display = on ? 'flex' : 'none'
+  schedulePanelRender()
+}
+
+function openPanel(v) {
+  activeTileId = vkey(v)
+  document.querySelectorAll('.tile').forEach(t => {
+    t.classList.toggle('active-tile', t.dataset.vkey === vkey(v))
+  })
+
+  document.getElementById('panelTitle').textContent = v.label
+  document.getElementById('panelCat').textContent   = v.cat + ' · ' + v.id
+
+  // Set defaults
+  const d = v.defaults || {}
+  document.getElementById('pBrandName').value   = d.brandName    || 'Acme Studio'
+  document.getElementById('pHeadline').value    = d.headline     || 'The future ships today'
+  document.getElementById('pSubheadline').value = d.subheadline  || ''
+  document.getElementById('pStat').value        = d.stat         || ''
+  document.getElementById('pCtaText').value     = d.ctaText      || ''
+  document.getElementById('pBgUrl').value       = ''
+  document.getElementById('pColorPicker').value = v.color
+  document.getElementById('pColorHex').value    = v.color
+
+  // Pre-set animation toggle for animated variants
+  const isAnimated = !!v.animated
+  document.getElementById('pAnimateToggle').checked = isAnimated
+  document.getElementById('pAnimateOpts').style.display = isAnimated ? 'flex' : 'none'
+  if (isAnimated && v.animation) {
+    document.getElementById('pAnimationType').value = v.animation
+  }
+
+  // Build extra JSON from variant-specific defaults
+  const skip = new Set(['brandName','headline','subheadline','stat','ctaText'])
+  const extra = Object.fromEntries(Object.entries(d).filter(([k]) => !skip.has(k)))
+  document.getElementById('pExtra').value = Object.keys(extra).length
+    ? JSON.stringify(extra, null, 2) : ''
+
+  // Set preset
+  panelPreset = v.preset || 'instagram-square'
+  document.querySelectorAll('.p-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.preset === panelPreset)
+  })
+
+  document.getElementById('panel').classList.add('open')
+  document.getElementById('galleryWrap').classList.add('panel-open')
+
+  panelRender()
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('open')
+  document.getElementById('galleryWrap').classList.remove('panel-open')
+  document.querySelectorAll('.tile').forEach(t => t.classList.remove('active-tile'))
+  activeTileId = null
+}
+
+function setPanelPreset(btn) {
+  document.querySelectorAll('.p-btn').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  panelPreset = btn.dataset.preset
+  schedulePanelRender()
+}
+
+function syncPanelColor(source) {
+  if (source === 'picker') {
+    document.getElementById('pColorHex').value = document.getElementById('pColorPicker').value
+  } else {
+    const h = document.getElementById('pColorHex').value.trim()
+    if (/^#[0-9a-fA-F]{6}$/.test(h)) document.getElementById('pColorPicker').value = h
+  }
+  schedulePanelRender()
+}
+
+function schedulePanelRender() {
+  clearTimeout(panelDebounce)
+  panelDebounce = setTimeout(panelRender, 500)
+}
+
+// Wire panel inputs
+;['pBrandName','pHeadline','pSubheadline','pStat','pCtaText','pColorHex','pExtra','pBgUrl'].forEach(id => {
+  document.getElementById(id).addEventListener('input', schedulePanelRender)
+})
+
+async function panelRender() {
+  if (panelRendering) return
+  panelRendering = true
+  const btn = document.getElementById('rerenderBtn')
+  btn.disabled = true
+  btn.textContent = 'Rendering…'
+
+  const preview = document.getElementById('panelPreview')
+  const existingImg = preview.querySelector('img')
+  if (existingImg) {
+    const spin = document.createElement('div')
+    spin.className = 'panel-spinner'
+    spin.style.cssText = 'position:absolute'
+    preview.appendChild(spin)
+  } else {
+    preview.innerHTML = '<div class="panel-spinner"></div>'
+  }
+
+  const extra = getPanelExtra()
+  if (extra === null) { resetPanelBtn(); return }
+
+  const isGif   = document.getElementById('pAnimateToggle').checked
+  const bgUrl   = document.getElementById('pBgUrl').value.trim()
+  // activeTileId is a vkey; the real variant id is always the base variant id
+  const variantId = VARIANTS.find(x => vkey(x) === activeTileId)?.id || activeTileId
+
+  const payload = {
+    variant:      variantId,
+    brandName:    document.getElementById('pBrandName').value.trim()   || 'Acme Studio',
+    primaryColor: document.getElementById('pColorHex').value.trim()    || '#5b5bd6',
+    headline:     document.getElementById('pHeadline').value.trim()    || 'The future ships today',
+    subheadline:  document.getElementById('pSubheadline').value.trim() || undefined,
+    stat:         document.getElementById('pStat').value.trim()        || undefined,
+    ctaText:      document.getElementById('pCtaText').value.trim()     || undefined,
+    ...(bgUrl ? { bgImageData: bgUrl } : {}),
+    preset:       panelPreset,
+    tokens:       { _cb: String(Date.now()) },
+    ...extra,
+  }
+  if (isGif) {
+    payload.animation = document.getElementById('pAnimationType').value
+    payload.frames    = parseInt(document.getElementById('pFrames').value)   || 10
+    payload.delay     = parseInt(document.getElementById('pDelay').value)    || 7
+  }
+  Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k])
+
+  const endpoint = isGif ? '/render-animated' : '/render'
+  const t0 = Date.now()
+  try {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) {
+      const e = await res.text()
+      preview.innerHTML = `<div style="color:#f87171;font-size:12px;font-family:monospace;padding:12px;word-break:break-all">Error ${res.status}: ${escHtml(e)}</div>`
+      resetPanelBtn(); return
+    }
+
+    const bytes = await res.arrayBuffer()
+    const mime  = isGif ? 'image/gif' : 'image/png'
+    const blob  = new Blob([bytes], { type: mime })
+    if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl)
+    currentBlobUrl = URL.createObjectURL(blob)
+
+    preview.innerHTML = ''
+    const img = document.createElement('img')
+    img.src = currentBlobUrl
+    img.alt = variantId
+    preview.appendChild(img)
+
+    const timing = document.createElement('div')
+    timing.className = 'panel-timing'
+    timing.textContent = `${Date.now() - t0}ms · ${(bytes.byteLength / 1024).toFixed(0)} KB${isGif ? ' · GIF' : ''}`
+    preview.appendChild(timing)
+
+  } catch (err) {
+    preview.innerHTML = `<div style="color:#f87171;font-size:12px;font-family:monospace;padding:12px">Network error: ${escHtml(err.message)}</div>`
+  }
+  resetPanelBtn()
+}
+
+function getPanelExtra() {
+  try {
+    const raw = document.getElementById('pExtra').value.trim()
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    document.getElementById('pExtra').style.borderColor = '#e11d48'
+    setTimeout(() => { document.getElementById('pExtra').style.borderColor = '' }, 2000)
+    panelRendering = false
+    return null
+  }
+}
+
+function resetPanelBtn() {
+  panelRendering = false
+  const btn = document.getElementById('rerenderBtn')
+  btn.disabled = false
+  btn.textContent = 'Re-render'
+}
+
+async function downloadCard() {
+  if (!currentBlobUrl) return
+  const isGif = document.getElementById('pAnimateToggle').checked
+  const ext   = isGif ? 'gif' : 'png'
+  const variantId = VARIANTS.find(x => vkey(x) === activeTileId)?.id || activeTileId || 'card'
+  const a = document.createElement('a')
+  a.href = currentBlobUrl
+  a.download = `${variantId}-${panelPreset}.${ext}`
+  a.click()
+}
+
+// ─────────────────────────────────────────────────────────────
+// AI GENERATE FROM PROMPT
+// ─────────────────────────────────────────────────────────────
+async function generateFromPrompt() {
+  const prompt = document.getElementById('searchInput').value.trim()
+  if (!prompt || prompt.length < 6) return
+
+  const genBtn   = document.getElementById('generateBtn')
+  const genBadge = document.getElementById('genBadge')
+  const genLabel = document.getElementById('genLabel')
+  genBtn.disabled = true
+  genBadge.classList.add('visible')
+  genLabel.textContent = 'Thinking…'
+
+  try {
+    const res = await fetch(`${API_BASE}/parse-prompt`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+      body: JSON.stringify({ prompt }),
+    })
+
+    if (!res.ok) {
+      genLabel.textContent = `Error ${res.status}`
+      setTimeout(() => { genBadge.classList.remove('visible') }, 3000)
+      genBtn.disabled = false
+      return
+    }
+
+    const { params } = await res.json()
+    genLabel.textContent = 'Rendering…'
+
+    // Find or default variant
+    const vid = (params.variant && VARIANTS.find(v => v.id === params.variant))
+      ? params.variant : 'stat-hero'
+    const v = VARIANTS.find(x => x.id === vid)
+
+    // Apply parsed params to panel
+    activeTileId = vid
+    document.getElementById('panelTitle').textContent = v.label
+    document.getElementById('panelCat').textContent   = v.cat + ' · ' + v.id
+
+    document.getElementById('pBrandName').value   = params.brandName   || v.defaults?.brandName    || 'Acme Studio'
+    document.getElementById('pHeadline').value    = params.headline    || v.defaults?.headline     || ''
+    document.getElementById('pSubheadline').value = params.subheadline || v.defaults?.subheadline  || ''
+    document.getElementById('pStat').value        = params.stat        || v.defaults?.stat         || ''
+    document.getElementById('pCtaText').value     = params.ctaText     || v.defaults?.ctaText      || ''
+    document.getElementById('pBgUrl').value       = params.bgImageData || ''
+    const color = params.primaryColor || v.color
+    document.getElementById('pColorPicker').value = color
+    document.getElementById('pColorHex').value    = color
+
+    const preset = params.preset || v.preset || 'instagram-square'
+    panelPreset  = preset
+    document.querySelectorAll('.p-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.preset === preset)
+    })
+
+    // Build extra JSON from remaining variant defaults
+    const skip = new Set(['brandName','headline','subheadline','stat','ctaText'])
+    const extra = Object.fromEntries(Object.entries(v.defaults || {}).filter(([k]) => !skip.has(k)))
+    document.getElementById('pExtra').value = Object.keys(extra).length
+      ? JSON.stringify(extra, null, 2) : ''
+
+    // Open panel
+    document.getElementById('panel').classList.add('open')
+    document.getElementById('galleryWrap').classList.add('panel-open')
+
+    // Highlight tile
+    document.querySelectorAll('.tile').forEach(t => {
+      t.classList.toggle('active-tile', t.dataset.vkey === vid)
+    })
+    const targetTile = document.querySelector(`[data-vkey="${vid}"]`)
+    if (targetTile) targetTile.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+    await panelRender()
+
+  } catch (err) {
+    genLabel.textContent = 'Failed — ' + err.message
+    setTimeout(() => { genBadge.classList.remove('visible') }, 3000)
+  }
+
+  genBadge.classList.remove('visible')
+  genBtn.disabled = false
+}
+
+// ─────────────────────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+}
+
+// ─────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────
+buildSwatches()
+buildBgPicks()
+renderGallery()
+</script>
+</body>
+</html>

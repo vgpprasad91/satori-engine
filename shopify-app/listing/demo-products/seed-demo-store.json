@@ -1,0 +1,234 @@
+{
+  "demo_store": {
+    "name": "MailCraft Demo Store",
+    "description": "Showcase store with 20 products across 3 categories for Shopify app listing screenshots",
+    "categories": ["apparel", "home_goods", "food"],
+    "brand_kit": {
+      "primary_color": "#6366F1",
+      "font_family": "Inter",
+      "logo_text": "DemoShop"
+    }
+  },
+  "products": [
+    {
+      "id": "demo-001",
+      "category": "apparel",
+      "title": "Classic Crewneck Sweatshirt",
+      "price": "49.99",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/7691065/pexels-photo-7691065.jpeg",
+      "template_id": "product-card",
+      "shopify_product_id": "8000000001",
+      "status": "success"
+    },
+    {
+      "id": "demo-002",
+      "category": "apparel",
+      "title": "Slim-Fit Chino Pants",
+      "price": "79.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg",
+      "template_id": "product-card",
+      "shopify_product_id": "8000000002",
+      "status": "success"
+    },
+    {
+      "id": "demo-003",
+      "category": "apparel",
+      "title": "Oversized Linen Shirt",
+      "price": "65.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/4066288/pexels-photo-4066288.jpeg",
+      "template_id": "new-arrival",
+      "shopify_product_id": "8000000003",
+      "status": "success"
+    },
+    {
+      "id": "demo-004",
+      "category": "apparel",
+      "title": "Ribbed Knit Beanie",
+      "price": "24.99",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/3622614/pexels-photo-3622614.jpeg",
+      "template_id": "sale-announcement",
+      "shopify_product_id": "8000000004",
+      "status": "success"
+    },
+    {
+      "id": "demo-005",
+      "category": "apparel",
+      "title": "Merino Wool Turtleneck",
+      "price": "89.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/7691164/pexels-photo-7691164.jpeg",
+      "template_id": "product-card",
+      "shopify_product_id": "8000000005",
+      "status": "success"
+    },
+    {
+      "id": "demo-006",
+      "category": "apparel",
+      "title": "High-Rise Yoga Leggings",
+      "price": "55.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/4498294/pexels-photo-4498294.jpeg",
+      "template_id": "story-format",
+      "shopify_product_id": "8000000006",
+      "status": "success"
+    },
+    {
+      "id": "demo-007",
+      "category": "apparel",
+      "title": "Puffer Vest",
+      "price": "69.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/5384423/pexels-photo-5384423.jpeg",
+      "template_id": "price-drop",
+      "shopify_product_id": "8000000007",
+      "status": "success"
+    },
+    {
+      "id": "demo-008",
+      "category": "home_goods",
+      "title": "Ceramic Pour-Over Coffee Set",
+      "price": "45.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/5765831/pexels-photo-5765831.jpeg",
+      "template_id": "product-card",
+      "shopify_product_id": "8000000008",
+      "status": "success"
+    },
+    {
+      "id": "demo-009",
+      "category": "home_goods",
+      "title": "Linen Throw Pillow Set",
+      "price": "38.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg",
+      "template_id": "new-arrival",
+      "shopify_product_id": "8000000009",
+      "status": "success"
+    },
+    {
+      "id": "demo-010",
+      "category": "home_goods",
+      "title": "Bamboo Cutting Board",
+      "price": "29.99",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/4397920/pexels-photo-4397920.jpeg",
+      "template_id": "product-card",
+      "shopify_product_id": "8000000010",
+      "status": "success"
+    },
+    {
+      "id": "demo-011",
+      "category": "home_goods",
+      "title": "Soy Wax Candle — Vanilla Oak",
+      "price": "22.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/3270223/pexels-photo-3270223.jpeg",
+      "template_id": "seasonal",
+      "shopify_product_id": "8000000011",
+      "status": "success"
+    },
+    {
+      "id": "demo-012",
+      "category": "home_goods",
+      "title": "Handwoven Storage Basket",
+      "price": "34.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/6707628/pexels-photo-6707628.jpeg",
+      "template_id": "product-card",
+      "shopify_product_id": "8000000012",
+      "status": "success"
+    },
+    {
+      "id": "demo-013",
+      "category": "home_goods",
+      "title": "Marble Cheese Board",
+      "price": "42.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/5765825/pexels-photo-5765825.jpeg",
+      "template_id": "sale-announcement",
+      "shopify_product_id": "8000000013",
+      "status": "success"
+    },
+    {
+      "id": "demo-014",
+      "category": "home_goods",
+      "title": "Terracotta Plant Pot Set",
+      "price": "27.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/4751978/pexels-photo-4751978.jpeg",
+      "template_id": "product-card",
+      "shopify_product_id": "8000000014",
+      "status": "success"
+    },
+    {
+      "id": "demo-015",
+      "category": "food",
+      "title": "Artisan Cold Brew Coffee",
+      "price": "18.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/4226867/pexels-photo-4226867.jpeg",
+      "template_id": "product-card",
+      "shopify_product_id": "8000000015",
+      "status": "success"
+    },
+    {
+      "id": "demo-016",
+      "category": "food",
+      "title": "Raw Wildflower Honey 500g",
+      "price": "14.99",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg",
+      "template_id": "new-arrival",
+      "shopify_product_id": "8000000016",
+      "status": "success"
+    },
+    {
+      "id": "demo-017",
+      "category": "food",
+      "title": "Extra Virgin Olive Oil 500ml",
+      "price": "19.99",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/33783/olive-oil-salad-dressing-cooking-olive.jpg",
+      "template_id": "product-card",
+      "shopify_product_id": "8000000017",
+      "status": "success"
+    },
+    {
+      "id": "demo-018",
+      "category": "food",
+      "title": "Dark Chocolate Bark — Sea Salt",
+      "price": "12.00",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/918327/pexels-photo-918327.jpeg",
+      "template_id": "seasonal",
+      "shopify_product_id": "8000000018",
+      "status": "success"
+    },
+    {
+      "id": "demo-019",
+      "category": "food",
+      "title": "Loose Leaf Earl Grey Tea 100g",
+      "price": "11.50",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/1417945/pexels-photo-1417945.jpeg",
+      "template_id": "product-card",
+      "shopify_product_id": "8000000019",
+      "status": "success"
+    },
+    {
+      "id": "demo-020",
+      "category": "food",
+      "title": "Smoked Paprika Spice Blend 80g",
+      "price": "8.99",
+      "currency": "USD",
+      "image_url": "https://images.pexels.com/photos/1340116/pexels-photo-1340116.jpeg",
+      "template_id": "price-drop",
+      "shopify_product_id": "8000000020",
+      "status": "success"
+    }
+  ]
+}

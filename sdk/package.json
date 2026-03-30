@@ -1,0 +1,50 @@
+{
+  "name": "mailcraft-satori",
+  "version": "1.0.0",
+  "description": "Official Node.js/TypeScript SDK for the mailcraft-satori image rendering API. 127 variants, 24 format presets, 9 aesthetic registers.",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import":  "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types":   "./dist/types/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build":    "npm run build:esm && npm run build:cjs && npm run build:types",
+    "build:esm":   "tsc -p tsconfig.esm.json",
+    "build:cjs":   "tsc -p tsconfig.cjs.json",
+    "build:types": "tsc -p tsconfig.types.json",
+    "clean":    "rm -rf dist",
+    "test":     "node --experimental-vm-modules node_modules/.bin/jest",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "image-generation",
+    "og-image",
+    "social-cards",
+    "ad-creatives",
+    "satori",
+    "cloudflare-workers",
+    "bannerbear-alternative"
+  ],
+  "author": "mailcraft",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vgpprasad91/satori-engine"
+  },
+  "homepage": "https://mailcraft-satori.vguruprasad91.workers.dev",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

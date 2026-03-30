@@ -1,0 +1,40 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /tmp/satori-engine/.claude/hooks/agentcomms-trigger-check.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /tmp/satori-engine/.claude/hooks/agentcomms-result.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "agentcomms": {
+      "type": "stdio",
+      "command": "python3",
+      "args": [
+        "/Users/guruprasadvenkataraghavan/Documents/Dropbox/Projects/Side_Projects/Partnerstack/partnerstack_alternative/backend/statelite/sdks/python/agentcomms-mcp/server.py"
+      ],
+      "env": {
+        "AGENTCOMMS_API_KEY": "sk_47474913f11505c5f586b8df0d9d055a3447781dc16c7f950cb94e4b78e2f993",
+        "AGENTCOMMS_BASE_URL": "https://statelite-api-dev.vguruprasad91.workers.dev"
+      }
+    }
+  }
+}

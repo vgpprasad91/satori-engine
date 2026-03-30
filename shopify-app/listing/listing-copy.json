@@ -1,0 +1,59 @@
+{
+  "app_name": "MailCraft Image Generator",
+  "short_description": "AI-powered product images for email & social — branded, instant, no design skills needed.",
+  "long_description": "**Stop losing sales to plain product photos.**\n\nCustomers scroll past generic images. MailCraft turns your Shopify product catalog into on-brand, professional marketing visuals in seconds — no Photoshop, no designer, no waiting.\n\n## How It Works\n\n1. **Connect your brand** — Upload your logo, pick your brand color, choose a font. Takes 2 minutes.\n2. **Pick a template** — Choose from 8 professionally designed layouts (product card, sale announcement, new arrival, story format, and more).\n3. **Generate & publish** — MailCraft removes the background, composites your product onto the template, and delivers a pixel-perfect image ready for email campaigns, social posts, and ads.\n\n## Why Merchants Choose MailCraft\n\n- **10× faster than hiring a designer** — Generate a full product catalog of branded images in under an hour.\n- **Always on-brand** — Every image uses your exact colors, logo, and fonts. Zero inconsistency.\n- **Built for Shopify** — Native App Bridge integration, billing through Shopify, and automatic product sync. Nothing to install outside Shopify.\n\n## Pricing\n\n- **Hobby** — Free, 100 images/month. Perfect for small catalogs.\n- **Pro** — $29/month, 1,000 images/month. For growing brands.\n- **Business** — $79/month, 10,000 images/month. For high-volume merchants.\n\nAll plans include background removal, branded compositing, and instant download.",
+  "app_icon_spec": {
+    "size": "512x512",
+    "format": "PNG",
+    "description": "Dark navy background (#0F172A) with envelope icon in brand indigo (#6366F1), bold 'MC' monogram overlay in white. Rounded corners 80px. Generated via Satori renderer."
+  },
+  "screenshots": [
+    {
+      "filename": "01-dashboard.png",
+      "size": "1600x900",
+      "caption": "Dashboard — at-a-glance stats, recent generations, and quick actions",
+      "route": "/app"
+    },
+    {
+      "filename": "02-template-editor.png",
+      "size": "1600x900",
+      "caption": "Template editor — live brand preview with color, font, and logo customization",
+      "route": "/app/templates"
+    },
+    {
+      "filename": "03-products-grid.png",
+      "size": "1600x900",
+      "caption": "Products grid — status badges, generated thumbnails, bulk regenerate",
+      "route": "/app/products"
+    },
+    {
+      "filename": "04-billing.png",
+      "size": "1600x900",
+      "caption": "Billing page — plan comparison, usage progress bar, upgrade flow",
+      "route": "/app/billing"
+    },
+    {
+      "filename": "05-onboarding.png",
+      "size": "1600x900",
+      "caption": "Onboarding wizard — 3-step setup: brand kit → template → confirm",
+      "route": "/app/onboarding"
+    },
+    {
+      "filename": "06-status-page.png",
+      "size": "1600x900",
+      "caption": "Public status page — queue depth, p50/p95 generation time, uptime",
+      "route": "/status"
+    }
+  ],
+  "demo_video": {
+    "filename": "demo-45s.mp4",
+    "duration_seconds": 45,
+    "scenes": [
+      { "start": 0, "end": 8, "description": "Install flow: Shopify Partners listing → 'Add app' → OAuth redirect → permission screen" },
+      { "start": 8, "end": 18, "description": "Brand kit setup: logo upload, color picker (#6366F1 indigo), font selector (Inter)" },
+      { "start": 18, "end": 28, "description": "Template selection: grid of 8 templates, click 'Product Card', live preview populates with brand colors" },
+      { "start": 28, "end": 38, "description": "First image generated: products grid shows 'pending' → spinner → 'success' badge → thumbnail visible" },
+      { "start": 38, "end": 45, "description": "Download: click image → full-res preview → 'Download PNG' → file saved to desktop. End card: MailCraft logo + pricing CTA" }
+    ]
+  }
+}

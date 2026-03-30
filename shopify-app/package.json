@@ -1,0 +1,50 @@
+{
+  "name": "shopify-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --env development",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "build": "remix vite:build",
+    "test": "vitest run --config vitest.config.ts",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "db:migrate:dev": "wrangler d1 migrations apply shopify-app-dev --local --env development",
+    "db:migrate:staging": "wrangler d1 migrations apply shopify-app-staging --env staging",
+    "db:migrate:production": "wrangler d1 migrations apply shopify-app-production --env production",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint app --ext .ts,.tsx",
+    "lint:a11y": "axe-cli --exit"
+  },
+  "dependencies": {
+    "@remix-run/cloudflare": "latest",
+    "@remix-run/react": "latest",
+    "@sentry/cloudflare": "^8.0.0",
+    "@shopify/app-bridge-react": "latest",
+    "@shopify/polaris": "latest",
+    "@shopify/shopify-app-remix": "latest",
+    "isbot": "^4.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "@playwright/test": "^1.49.0",
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "@remix-run/dev": "latest",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@vitest/coverage-v8": "^2.1.9",
+    "axe-core": "^4.10.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8",
+    "wrangler": "^3.91.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

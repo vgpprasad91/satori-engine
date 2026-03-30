@@ -1,0 +1,56 @@
+name = "mailcraft-satori"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Pre-deploy invariant gate — runs before wrangler compiles and uploads.
+# Catches: unmapped variants, WCAG contrast failures, missing HTML annotations,
+# structural config errors.  Exit non-zero → deploy is aborted.
+#
+# Uses `npm run invariant-check` rather than a direct node path because npm
+# always sets CWD to the package.json directory before running the script,
+# making the ../../ relative path in package.json reliable regardless of
+# where wrangler itself was invoked from.
+[build]
+command = "npm run invariant-check"
+
+# Fonts bundled at deploy-time via module rules — zero CDN latency.
+# .woff  = Inter (latin subset, 4 weights) + Playfair Display
+# .ttf   = Cormorant Garamond, Dancing Script, Bebas Neue (aesthetic registers)
+[[rules]]
+type = "Data"
+globs = ["**/*.woff", "**/*.woff2", "**/*.ttf"]
+fallthrough = false
+
+# Render Durable Object — keeps WASM permanently warm, serialises renders with semaphore.
+[[durable_objects.bindings]]
+name = "SATORI_DO"
+class_name = "SatoriDO"
+
+# Rate-limiter Durable Object — per-API-key sliding-window counters.
+[[durable_objects.bindings]]
+name = "RATE_LIMITER"
+class_name = "RateLimiterDO"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["SatoriDO"]
+
+[[migrations]]
+tag = "v2"
+new_classes = ["RateLimiterDO"]
+
+# R2 bucket — CDN-backed storage for rendered images (stable HTTPS URLs).
+[[r2_buckets]]
+binding = "RENDER_CACHE"
+bucket_name = "mailcraft-renders"
+
+# KV namespace — API key store (key → { keyId, plan, limit }).
+[[kv_namespaces]]
+binding = "API_KEYS"
+id = "5cdd9a07f0a14d848f3a019a35c7c860"
+
+[triggers]
+# Keep-warm cron: pings all 4 DO shards every 5 minutes so no shard ever goes cold.
+# TTL eviction cron: daily at 02:00 UTC — deletes DO storage entries older than 30 days.
+crons = ["*/5 * * * *", "0 2 * * *"]

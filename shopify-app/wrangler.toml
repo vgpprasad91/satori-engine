@@ -1,0 +1,206 @@
+# Shopify App — Cloudflare Worker
+# Shopify API version pinned to 2025-01 — upgrade-by date: 2025-10-01
+
+name = "shopify-app"
+main = "build/worker/index.js"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ---------------------------------------------------------------------------
+# Cron Triggers (shared across all environments via environment-specific diffs)
+# ---------------------------------------------------------------------------
+[triggers]
+crons = [
+  "0 9 * * *",    # Webhook audit — daily at 09:00 UTC
+  "0 2 * * *",    # D1 backup — nightly at 02:00 UTC
+  "0 0 1 * *",    # Usage reset — 1st of every month at midnight UTC
+  "*/5 * * * *"   # PR-028: Performance SLA alert check — every 5 minutes
+]
+
+# ---------------------------------------------------------------------------
+# Cloudflare Logpush — Workers Trace Events → R2
+#
+# Configure via Cloudflare dashboard or API after deployment:
+#   POST /accounts/{account_id}/logpush/jobs
+#   {
+#     "dataset": "workers_trace_events",
+#     "destination_conf": "r2://<bucket>/logs/{DATE}?account-id=<id>&access-key-id=<key>&secret-access-key=<secret>",
+#     "output_options": { "field_names": ["Timestamp","Message","Outcome","ScriptName"] },
+#     "filter": { "key": "ScriptName", "operator": "eq", "value": "shopify-app-production" }
+#   }
+#
+# R2 path pattern: logs/{YYYY}/{MM}/{DD}/
+# Retention: R2 lifecycle rule — delete objects older than 90 days
+#   (set via: wrangler r2 bucket lifecycle set shopify-app-production-logs --expire-days 90)
+#
+# Logpush captures all console.log() JSON lines emitted by logger.ts.
+# Sensitive fields (access_token, SHOPIFY_API_SECRET) are stripped by logger.ts
+# at runtime before any JSON.stringify() call reaches Logpush.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Development environment
+# ---------------------------------------------------------------------------
+[env.development]
+name = "shopify-app-dev"
+
+[[env.development.services]]
+binding = "SATORI_RENDERER"
+service = "mailcraft-satori"
+environment = "development"
+
+[[env.development.d1_databases]]
+binding = "DB"
+database_name = "shopify-app-dev"
+database_id = "00000000-0000-0000-0000-000000000001"   # replace with real ID after: wrangler d1 create shopify-app-dev
+
+[[env.development.r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "shopify-app-dev-assets"
+
+[[env.development.r2_buckets]]
+binding = "LOGS_BUCKET"
+bucket_name = "shopify-app-dev-logs"   # wrangler r2 bucket create shopify-app-dev-logs
+
+[[env.development.kv_namespaces]]
+binding = "KV_STORE"
+id = "REPLACE_WITH_DEV_KV_ID"           # wrangler kv namespace create shopify-app-dev-kv
+preview_id = "REPLACE_WITH_DEV_KV_PREVIEW_ID"
+
+[[env.development.analytics_engine_datasets]]
+binding = "AE_METRICS"
+dataset = "shopify_app_metrics_dev"
+
+[[env.development.queues.producers]]
+binding = "IMAGE_QUEUE"
+queue = "shopify-image-queue-dev"
+
+# DLQ producer — allows consumer to inspect / re-queue DLQ messages
+[[env.development.queues.producers]]
+binding = "IMAGE_QUEUE_DLQ"
+queue = "shopify-image-queue-dev-dlq"
+
+[[env.development.queues.consumers]]
+queue = "shopify-image-queue-dev"
+max_retries = 4
+# Exponential retry delay: handled programmatically via message.retry({ delaySeconds })
+# in queue.server.ts. Base delay = 5s; doubles per attempt (5, 10, 20, 40 seconds).
+# Cloudflare max per-retry delay cap: 43200 seconds (12 hours).
+dead_letter_queue = "shopify-image-queue-dev-dlq"
+max_batch_size = 10
+max_batch_timeout = 5
+
+# DLQ consumer — reads failed jobs and writes status to D1
+[[env.development.queues.consumers]]
+queue = "shopify-image-queue-dev-dlq"
+max_retries = 1
+max_batch_size = 10
+max_batch_timeout = 5
+
+# ---------------------------------------------------------------------------
+# Staging environment
+# ---------------------------------------------------------------------------
+[env.staging]
+name = "shopify-app-staging"
+
+[[env.staging.services]]
+binding = "SATORI_RENDERER"
+service = "mailcraft-satori"
+environment = "staging"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "shopify-app-staging"
+database_id = "00000000-0000-0000-0000-000000000002"   # replace with real ID after: wrangler d1 create shopify-app-staging
+
+[[env.staging.r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "shopify-app-staging-assets"
+
+[[env.staging.r2_buckets]]
+binding = "LOGS_BUCKET"
+bucket_name = "shopify-app-staging-logs"   # wrangler r2 bucket create shopify-app-staging-logs
+
+[[env.staging.kv_namespaces]]
+binding = "KV_STORE"
+id = "REPLACE_WITH_STAGING_KV_ID"       # wrangler kv namespace create shopify-app-staging-kv
+preview_id = "REPLACE_WITH_STAGING_KV_PREVIEW_ID"
+
+[[env.staging.analytics_engine_datasets]]
+binding = "AE_METRICS"
+dataset = "shopify_app_metrics_staging"
+
+[[env.staging.queues.producers]]
+binding = "IMAGE_QUEUE"
+queue = "shopify-image-queue-staging"
+
+[[env.staging.queues.producers]]
+binding = "IMAGE_QUEUE_DLQ"
+queue = "shopify-image-queue-staging-dlq"
+
+[[env.staging.queues.consumers]]
+queue = "shopify-image-queue-staging"
+max_retries = 4
+dead_letter_queue = "shopify-image-queue-staging-dlq"
+max_batch_size = 10
+max_batch_timeout = 5
+
+[[env.staging.queues.consumers]]
+queue = "shopify-image-queue-staging-dlq"
+max_retries = 1
+max_batch_size = 10
+max_batch_timeout = 5
+
+# ---------------------------------------------------------------------------
+# Production environment
+# ---------------------------------------------------------------------------
+[env.production]
+name = "shopify-app-production"
+
+[[env.production.services]]
+binding = "SATORI_RENDERER"
+service = "mailcraft-satori"
+environment = "production"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "shopify-app-production"
+database_id = "00000000-0000-0000-0000-000000000003"   # replace with real ID after: wrangler d1 create shopify-app-production
+
+[[env.production.r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "shopify-app-production-assets"
+
+[[env.production.r2_buckets]]
+binding = "LOGS_BUCKET"
+bucket_name = "shopify-app-production-logs"   # wrangler r2 bucket create shopify-app-production-logs
+
+[[env.production.kv_namespaces]]
+binding = "KV_STORE"
+id = "REPLACE_WITH_PRODUCTION_KV_ID"    # wrangler kv namespace create shopify-app-production-kv
+preview_id = "REPLACE_WITH_PRODUCTION_KV_PREVIEW_ID"
+
+[[env.production.analytics_engine_datasets]]
+binding = "AE_METRICS"
+dataset = "shopify_app_metrics_production"
+
+[[env.production.queues.producers]]
+binding = "IMAGE_QUEUE"
+queue = "shopify-image-queue-production"
+
+[[env.production.queues.producers]]
+binding = "IMAGE_QUEUE_DLQ"
+queue = "shopify-image-queue-production-dlq"
+
+[[env.production.queues.consumers]]
+queue = "shopify-image-queue-production"
+max_retries = 4
+dead_letter_queue = "shopify-image-queue-production-dlq"
+max_batch_size = 10
+max_batch_timeout = 5
+
+[[env.production.queues.consumers]]
+queue = "shopify-image-queue-production-dlq"
+max_retries = 1
+max_batch_size = 10
+max_batch_timeout = 5

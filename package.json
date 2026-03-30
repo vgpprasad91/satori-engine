@@ -1,0 +1,23 @@
+{
+  "name": "satori-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Satori-based image rendering engine — Cloudflare Worker + SDK + Shopify App",
+  "workspaces": [
+    "renderer",
+    "sdk",
+    "shopify-app"
+  ],
+  "scripts": {
+    "dev:renderer": "npm run dev -w renderer",
+    "dev:shopify": "npm run dev -w shopify-app",
+    "deploy:renderer": "npm run deploy -w renderer",
+    "build:sdk": "npm run build -w sdk",
+    "test:sdk": "npm run test -w sdk",
+    "test:shopify": "npm run test -w shopify-app"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT"
+}

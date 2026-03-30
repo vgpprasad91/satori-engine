@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+.env
+*.log
+coverage/
+.DS_Store
+.agentcomms-bridge.json
+.agentcomms-trigger
