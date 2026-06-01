@@ -37,11 +37,11 @@
     "@remix-run/dev": "latest",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
-    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/coverage-v8": "^4.1.8",
     "axe-core": "^4.10.0",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
-    "vitest": "^2.1.8",
+    "vitest": "^4.1.8",
     "wrangler": "^3.91.0"
   },
   "engines": {
